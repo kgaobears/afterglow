@@ -56,7 +56,7 @@ export function scoreReportedRun(options: RegressionJobOptions, entries: unknown
 }
 
 export function regressionSummary(results: ReturnType<typeof scoreReportedRun>) {
-  const passed = results.every(result => !result.error && result.score.covered === result.score.total && result.score.correctlyTyped === result.score.total);
+  const passed = results.every(result => !result.error && result.score.covered === result.score.total && result.score.correctlyTyped === result.score.total && result.score.redundantCount === 0);
   return { passed, covered: results.reduce((sum, result) => sum + result.score.covered, 0),
     total: results.reduce((sum, result) => sum + result.score.total, 0),
     correctlyTyped: results.reduce((sum, result) => sum + result.score.correctlyTyped, 0) };

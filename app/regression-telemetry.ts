@@ -22,7 +22,7 @@ export type RegressionCaseResult = {
 export type RegressionPassLog = { title: string; status: "completed" | "error" | "skipped" | "not-reached"; raw: string | null; request: LocalRequestMessage[][]; error?: string; summary: string };
 
 export function regressionFailed(result: RegressionCaseResult): boolean {
-  return Boolean(result.error) || result.score.covered !== result.score.total || result.score.wrongType.length > 0;
+  return Boolean(result.error) || result.score.covered !== result.score.total || result.score.wrongType.length > 0 || result.score.redundantCount > 0;
 }
 
 export function regressionPassLogs(result: RegressionCaseResult): RegressionPassLog[] {

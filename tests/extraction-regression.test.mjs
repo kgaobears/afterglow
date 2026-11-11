@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { EXTRACTION_FIXTURES, scoreExtraction } from "../app/extraction-regression.ts";
-import { mergeCoverageCandidates } from "../app/atomization.ts";
+import { consolidateAtomicMemories, mergeCoverageCandidates } from "../app/atomization.ts";
 
 const kyle = EXTRACTION_FIXTURES.find(fixture => fixture.id === "kyle_brother");
 const allThree = [
@@ -12,7 +12,7 @@ const allThree = [
 
 test("Kyle passes with a brother profile and a separate visit event", () => {
   assert.deepEqual(scoreExtraction(kyle, allThree), {
-    covered: 2, total: 2, correctlyTyped: 2, missing: [], wrongType: [], matchingMemoryIndices: [0, 2],
+    covered: 2, total: 2, correctlyTyped: 2, missing: [], wrongType: [], matchingMemoryIndices: [0, 2], redundantCount: 0,
   });
 });
 
@@ -54,6 +54,32 @@ test("coverage pass adds recovered details without overwriting original candidat
 test("coverage rejects duplicate whitespace and punctuation variants", () => {
   const merged = mergeCoverageCandidates([allThree[0]], [{ ...allThree[0], detail: "  Has a brother, two years older than him! " }]);
   assert.equal(merged.length, 1);
+});
+
+test("Kyle's five overlapping suggestions become three standalone facts", () => {
+  const note = kyle.note;
+  const proposed = [
+    { name: "Kyle", detail: "Has a brother who is two years older than him and lives in SF", factType: "profile" },
+    { name: "Kyle's brother", detail: "Lives in SF", factType: "profile" },
+    { name: "Kyle", detail: "Visited his brother last weekend", factType: "timeline" },
+    { name: "Kyle", detail: "Has a brother who is two years older than him", factType: "profile" },
+    { name: "Kyle", detail: "Their brother lives in SF", factType: "profile" },
+  ].map(item => ({ ...item, quote: "" }));
+  const cleaned = consolidateAtomicMemories(proposed, note);
+  assert.equal(scoreExtraction(kyle, proposed).redundantCount, 2);
+  assert.equal(cleaned.length, 3);
+  assert.equal(scoreExtraction(kyle, cleaned).redundantCount, 0);
+  assert.equal(scoreExtraction(kyle, cleaned).covered, 2);
+  assert.deepEqual(cleaned.map(item => item.factType).sort(), ["profile", "profile", "timeline"].sort());
+  assert.ok(cleaned.every(item => item.name === "Kyle"));
+});
+
+test("consolidation retains compound detail when independent facts do not cover it", () => {
+  const facts = [
+    { name: "Kyle", detail: "Has a brother who is two years older than him and lives in SF", factType: "profile", quote: "" },
+    { name: "Kyle", detail: "Has a brother who is two years older than him", factType: "profile", quote: "" },
+  ];
+  assert.equal(consolidateAtomicMemories(facts, kyle.note).length, 2);
 });
 
 test("all fixtures have unique IDs and expectations", () => {

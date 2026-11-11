@@ -1,4 +1,5 @@
 import type { FactType } from "./fact-type";
+import { consolidateAtomicMemories } from "./atomization";
 
 export type ExtractionMemory = { name: string; detail: string; factType?: FactType };
 export type ExpectedAtomicFact = { label: string; person: string; signals: string[]; factType: FactType; rejectSignals?: string[] };
@@ -37,6 +38,7 @@ export type ExtractionScore = {
   missing: string[];
   wrongType: string[];
   matchingMemoryIndices: number[];
+  redundantCount: number;
 };
 
 function matches(expected: ExpectedAtomicFact, memory: ExtractionMemory): boolean {
@@ -72,5 +74,6 @@ export function scoreExtraction(fixture: ExtractionFixture, memories: Extraction
     missing,
     wrongType,
     matchingMemoryIndices: [...matched.values()],
+    redundantCount: memories.length - consolidateAtomicMemories(memories.map(memory => ({ ...memory, quote: "", factType: memory.factType ?? "profile" })), fixture.note).length,
   };
 }

@@ -192,6 +192,7 @@ export default function TestingSettingsPage() {
           {result.error&&<p className="settings-regression-log-error">Processing failed: {result.error}</p>}
           {result.score.missing.length>0&&<p>Missing independent facts: {result.score.missing.join(", ")}</p>}
           {result.score.wrongType.length>0&&<p>Different classification: {result.score.wrongType.join(", ")}</p>}
+          {result.score.redundantCount>0&&<p>Redundant or overlapping notes: {result.score.redundantCount}</p>}
           <details><summary>See model's individual notes ({result.memories.length})</summary><ol>{result.memories.map((memory,index)=><li key={index}><strong>{memory.name}</strong> · {memory.detail} <small>({memory.factType||"unclassified"})</small></li>)}</ol></details>
           {regressionFailed(result)&&<RegressionLogsPanel result={result}/>}
         </div>)}

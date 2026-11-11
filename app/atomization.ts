@@ -66,6 +66,7 @@ export function normalizeRelationalCoverage(missing: SourceMemory[], source: str
   const known = new Map(existing.map(item => [item.name.toLowerCase(), item.name]));
   const relative = /^(.+?)[’']s (brother|sister|daughter|son|mother|father|wife|husband|partner|parent|child)$/i;
   return missing.map(item => {
+    if (item.factType === "timeline") return item;
     const match = item.name.match(relative);
     if (!match) return item;
     const owner = known.get(match[1].toLowerCase());
@@ -75,6 +76,35 @@ export function normalizeRelationalCoverage(missing: SourceMemory[], source: str
       ? item.detail
       : `Their ${relationship} ${item.detail.replace(/^(?:he|she|they)\s+/i, "").replace(/^([A-Z])/, letter => letter.toLowerCase())}`;
     return { ...item, name: owner, detail, factType: inferFactType(detail, item.factType) };
+  });
+}
+
+// Consolidate repeated model suggestions without asking the model to rewrite
+// facts yet again. Keep the shorter standalone facts when, together, they
+// fully cover a compound profile note. Never remove a compound if any of its
+// meaningful terms would be lost, and never merge distinct timeline events.
+export function consolidateAtomicMemories(candidates: SourceMemory[], source: string): SourceMemory[] {
+  const normalized = normalizeRelationalCoverage(candidates, source, candidates);
+  const normalizedText = (value: string) => value.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+  const unique = mergeCoverageCandidates([], normalized);
+  const stopwords = new Set(["a", "an", "the", "has", "have", "is", "are", "was", "were", "who", "that", "and", "his", "her", "their", "him", "them", "than", "in", "at", "to", "of"]);
+  const terms = (value: string) => new Set(normalizedText(value).split(" ").filter(token => token && !stopwords.has(token)));
+  return unique.filter((item, index) => {
+    if (item.factType !== "profile" || !/\b(?:and|who|while)\b|;|,(?=\s*\w)/i.test(item.detail)) return true;
+    const target = terms(item.detail);
+    if (target.size < 4) return true;
+    const covered = new Set<string>();
+    let contributing = 0;
+    for (const [otherIndex, other] of unique.entries()) {
+      if (index === otherIndex || other.factType !== item.factType || normalizedText(other.name) !== normalizedText(item.name)) continue;
+      const otherTerms = terms(other.detail);
+      if (otherTerms.size >= target.size) continue;
+      const intersection = [...otherTerms].filter(token => target.has(token));
+      if (intersection.length < 2 || intersection.length < otherTerms.size * 0.7) continue;
+      contributing++;
+      intersection.forEach(token => covered.add(token));
+    }
+    return !(contributing >= 2 && [...target].every(token => covered.has(token)));
   });
 }
 

@@ -1,6 +1,6 @@
 import type { MLCEngineInterface } from "@mlc-ai/web-llm";
 import { inspectSourceMemories, reconcileSourceMemories, type MemoryDecision, type SourceMemory, type ReviewedMemory } from "./source-verification";
-import { acceptedAuditCandidates, fallbackAtomize, mergeCoverageCandidates, normalizeRelationalCoverage, preserveInitialAtoms, retainMissingPeople } from "./atomization";
+import { acceptedAuditCandidates, consolidateAtomicMemories, fallbackAtomize, mergeCoverageCandidates, normalizeRelationalCoverage, preserveInitialAtoms, retainMissingPeople } from "./atomization";
 import { inferFactType } from "./fact-type";
 import { applyTemporalAnnotations } from "./temporal-facts";
 import { parseMemories } from "./memory-parser";
@@ -298,6 +298,7 @@ export async function extractLocally(note: string, people: Array<{ name: string;
   } else {
     onProgress({ phase: "Skipping experimental date classification…" });
   }
+  candidates = consolidateAtomicMemories(candidates, note);
   const decisions = inspectSourceMemories(note, candidates, audited);
   const verifiedCount = decisions.filter(memory => memory.status === "verified").length;
   const reviewCount = decisions.filter(memory => memory.status === "review").length;
