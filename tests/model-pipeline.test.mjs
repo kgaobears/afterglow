@@ -44,8 +44,8 @@ test("same production pipeline works without WebGPU and preserves three independ
     JSON.stringify({ accepted: [0, 1, 2] }),
   ]);
   const result = await runCase(fixture("kyle_brother"), model);
-  assert.equal(result.score.covered, 3);
-  assert.equal(result.score.correctlyTyped, 3);
+  assert.equal(result.score.covered, 2);
+  assert.equal(result.score.correctlyTyped, 2);
   assert.equal(result.memories.length, 3);
   assert.equal(result.diagnostics.firstParsed, 1);
   assert.equal(result.diagnostics.atomizeParsed, 3);
@@ -76,7 +76,7 @@ test("optional coverage pass can restore independently missing profile facts", a
     JSON.stringify({ accepted: [0, 1, 2] }),
   ]);
   const result = await runCase(fixture("kyle_brother"), model, { enableCoveragePass: true });
-  assert.equal(result.score.covered, 3);
+  assert.equal(result.score.covered, 2);
   assert.equal(result.diagnostics.coverageAdded, 2);
   assert.equal(model.calls.length, 4);
   assert.match(model.calls[2].messages[1].content, /ORIGINAL NOTE/);
@@ -94,8 +94,8 @@ test("recovers Qwen's array-shaped coverage and unnamed-relative attribution", a
     JSON.stringify({ accepted: [0, 1, 2] }),
   ]);
   const result = await runCase(fixture("kyle_brother"), model, { enableCoveragePass: true });
-  assert.equal(result.score.covered, 3);
-  assert.equal(result.score.correctlyTyped, 3);
+  assert.equal(result.score.covered, 2);
+  assert.equal(result.score.correctlyTyped, 2);
   assert.equal(result.diagnostics.coverageAdded, 2);
   assert.equal(result.diagnostics.coverageError, undefined);
   assert.ok(result.memories.every(item => item.name === "Kyle"));
@@ -116,8 +116,8 @@ test("atomizer cannot erase a correct first-pass visit by reversing the visitor"
     JSON.stringify({ accepted: [0, 1, 2, 3, 4] }),
   ]);
   const result = await runCase(fixture("kyle_brother"), model, { enableCoveragePass: true });
-  assert.equal(result.score.covered, 3);
-  assert.equal(result.score.correctlyTyped, 3);
+  assert.equal(result.score.covered, 2);
+  assert.equal(result.score.correctlyTyped, 2);
   assert.ok(result.memories.some(item => item.name === "Kyle" && /visited his brother/i.test(item.detail)));
 });
 
@@ -129,5 +129,5 @@ test("a model which omits facts still fails the real regression scorer", async (
   ]);
   const result = await runCase(fixture("kyle_brother"), model);
   assert.equal(result.score.covered, 1);
-  assert.deepEqual(result.score.missing, ["Brother's age difference", "Brother lives in San Francisco"]);
+  assert.deepEqual(result.score.missing, ["Has a brother two years older"]);
 });

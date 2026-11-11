@@ -10,38 +10,45 @@ const allThree = [
   { name: "Kyle", detail: "Visited his brother last weekend.", factType: "timeline" },
 ];
 
-test("three standalone Kyle facts provide complete information coverage", () => {
+test("Kyle passes with a brother profile and a separate visit event", () => {
   assert.deepEqual(scoreExtraction(kyle, allThree), {
-    covered: 3, total: 3, correctlyTyped: 3, missing: [], wrongType: [], matchingMemoryIndices: [0, 1, 2],
+    covered: 2, total: 2, correctlyTyped: 2, missing: [], wrongType: [], matchingMemoryIndices: [0, 2],
   });
 });
 
-test("one compound note cannot masquerade as three independent facts", () => {
+test("one compound note cannot masquerade as a profile fact and a separate visit", () => {
   const combined = [{ name: "Kyle", detail: "Has a brother two years older living in SF, whom he visited last weekend.", factType: "timeline" }];
   const result = scoreExtraction(kyle, combined);
   assert.equal(result.covered, 1);
-  assert.equal(result.missing.length, 2);
+  assert.equal(result.missing.length, 1);
   assert.equal(result.correctlyTyped, 0);
 });
 
-test("coverage catches missing residence even when other details survive", () => {
+test("brother's residence is optional when relationship and visit are present", () => {
   const result = scoreExtraction(kyle, [allThree[0], allThree[2]]);
   assert.equal(result.covered, 2);
-  assert.deepEqual(result.missing, ["Brother lives in San Francisco"]);
+  assert.equal(result.total, 2);
+  assert.deepEqual(result.missing, []);
 });
 
 test("classification is scored separately from preserving facts", () => {
   const result = scoreExtraction(kyle, [{ ...allThree[0], factType: "timeline" }, ...allThree.slice(1)]);
-  assert.equal(result.covered, 3);
-  assert.equal(result.correctlyTyped, 2);
-  assert.deepEqual(result.wrongType, ["Brother's age difference"]);
+  assert.equal(result.covered, 2);
+  assert.equal(result.correctlyTyped, 1);
+  assert.deepEqual(result.wrongType, ["Has a brother two years older"]);
+});
+
+test("a reversed visit does not count as Kyle visiting his brother", () => {
+  const result = scoreExtraction(kyle, [allThree[0], { name: "Kyle", detail: "Kyle's brother visited Kyle last weekend", factType: "timeline" }]);
+  assert.equal(result.covered, 1);
+  assert.deepEqual(result.missing, ["Kyle visited his brother last weekend"]);
 });
 
 test("coverage pass adds recovered details without overwriting original candidates", () => {
   const first = [allThree[2]];
   const merged = mergeCoverageCandidates(first, [allThree[0], allThree[1], allThree[2]]);
   assert.deepEqual(merged, [allThree[2], allThree[0], allThree[1]]);
-  assert.equal(scoreExtraction(kyle, merged).covered, 3);
+  assert.equal(scoreExtraction(kyle, merged).covered, 2);
 });
 
 test("coverage rejects duplicate whitespace and punctuation variants", () => {

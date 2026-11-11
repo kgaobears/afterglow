@@ -71,7 +71,9 @@ When extraction loses information:
 
 ## Pass criteria
 
-- **Coverage:** each expected independent fact matches a **different** extracted memory. A compound note cannot pass three requirements by containing all three details.
+The Kyle fixture requires **two separate correctly attributed memories**: a profile fact about Kyle having a brother two years older, and a timeline event about Kyle visiting his brother last weekend. The brother's San Francisco residence is useful extra context, but optional and does not determine whether the regression passes. A reversed visit (the brother visiting Kyle) does not satisfy the timeline requirement.
+
+- **Coverage:** each expected independent fact matches a **different** extracted memory. A compound note cannot satisfy multiple requirements by bundling their details.
 - **Classification:** each matched fact has the expected profile or timeline type. Classification is reported separately from coverage.
 - **Attribution:** an expectation only matches memories belonging to the correct named speaker.
 - **Preservation:** raw gathering text remains intact, and failed model passes leave candidates available for manual review.

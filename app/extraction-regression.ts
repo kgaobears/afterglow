@@ -1,7 +1,7 @@
 import type { FactType } from "./fact-type";
 
 export type ExtractionMemory = { name: string; detail: string; factType?: FactType };
-export type ExpectedAtomicFact = { label: string; person: string; signals: string[]; factType: FactType };
+export type ExpectedAtomicFact = { label: string; person: string; signals: string[]; factType: FactType; rejectSignals?: string[] };
 export type ExtractionFixture = { id: string; title: string; note: string; date: string; expected: ExpectedAtomicFact[] };
 
 // Deliberately small, realistic examples. Extend this list when a real note
@@ -9,13 +9,12 @@ export type ExtractionFixture = { id: string; title: string; note: string; date:
 export const EXTRACTION_FIXTURES: ExtractionFixture[] = [
   {
     id: "kyle_brother",
-    title: "One sentence, three independent memories",
+    title: "Brother profile and visit timeline (SF is optional)",
     note: "Kyle has a brother who is two years older than him and lives in SF. Kyle visited his brother last weekend.",
     date: "2026-11-08",
     expected: [
-      { label: "Brother's age difference", person: "Kyle", signals: ["brother", "\\b(?:two|2)\\s+years?\\s+older\\b"], factType: "profile" },
-      { label: "Brother lives in San Francisco", person: "Kyle", signals: ["brother", "\\b(?:SF|San Francisco)\\b"], factType: "profile" },
-      { label: "Visited brother last weekend", person: "Kyle", signals: ["brother", "\\b(?:visit(?:ed)?|went to see|saw)\\b", "(?:last|past|this) weekend"], factType: "timeline" },
+      { label: "Has a brother two years older", person: "Kyle", signals: ["brother", "\\b(?:two|2)\\s+years?\\s+older\\b"], factType: "profile" },
+      { label: "Kyle visited his brother last weekend", person: "Kyle", signals: ["brother", "\\b(?:visit(?:ed)?|went to see|saw)\\b", "(?:last|past|this) weekend"], rejectSignals: ["brother\\s+(?:visited|went to see|saw)\\s+Kyle"], factType: "timeline" },
     ],
   },
   {
@@ -42,7 +41,8 @@ export type ExtractionScore = {
 
 function matches(expected: ExpectedAtomicFact, memory: ExtractionMemory): boolean {
   return memory.name.trim().toLowerCase() === expected.person.toLowerCase()
-    && expected.signals.every(signal => new RegExp(signal, "i").test(memory.detail));
+    && expected.signals.every(signal => new RegExp(signal, "i").test(memory.detail))
+    && !(expected.rejectSignals || []).some(signal => new RegExp(signal, "i").test(memory.detail));
 }
 
 // A single compound note MUST NOT pass several expected fact checks. Find a

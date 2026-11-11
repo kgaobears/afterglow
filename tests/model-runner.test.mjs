@@ -42,7 +42,7 @@ test("CLI regression runner calls the shared pipeline through a model-server HTT
     assert.equal(result.code, 0, result.stderr);
     const report = JSON.parse(result.stdout);
     assert.equal(report.passed, true);
-    assert.equal(report.results[0].score.covered, 3);
+    assert.equal(report.results[0].score.covered, 2);
     assert.equal(report.results[0].diagnostics.auditParsed, 3);
     assert.equal(requests.length, 3);
     assert.ok(requests.every(item => item.path === "/v1/chat/completions"));

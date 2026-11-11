@@ -19,7 +19,7 @@ test("server ignores a browser's claimed score and detects missing independent f
   ] }]);
   assert.equal(results[0].score.covered, 1);
   assert.equal(regressionSummary(results).passed, false);
-  assert.deepEqual(results[0].score.missing, ["Brother's age difference", "Brother lives in San Francisco"]);
+  assert.deepEqual(results[0].score.missing, ["Has a brother two years older"]);
 });
 
 test("server rejects a partial fixture report and doesn't count a compound fact twice", () => {
