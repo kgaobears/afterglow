@@ -83,6 +83,25 @@ test("optional coverage pass can restore independently missing profile facts", a
   assert.equal(result.memories[0].factType, "timeline");
 });
 
+test("recovers Qwen's array-shaped coverage and unnamed-relative attribution", async () => {
+  const model = scriptedModel([
+    reply([kyleAtoms[2]]),
+    reply([kyleAtoms[2]]),
+    JSON.stringify([
+      { name: "Kyle's brother", detail: "Has a brother two years older than him" },
+      { name: "Kyle's brother", detail: "Lives in SF" },
+    ]),
+    JSON.stringify({ accepted: [0, 1, 2] }),
+  ]);
+  const result = await runCase(fixture("kyle_brother"), model, { enableCoveragePass: true });
+  assert.equal(result.score.covered, 3);
+  assert.equal(result.score.correctlyTyped, 3);
+  assert.equal(result.diagnostics.coverageAdded, 2);
+  assert.equal(result.diagnostics.coverageError, undefined);
+  assert.ok(result.memories.every(item => item.name === "Kyle"));
+  assert.match(model.calls[1].messages[1].content, /ORIGINAL GATHERING NOTE/);
+});
+
 test("a model which omits facts still fails the real regression scorer", async () => {
   const model = scriptedModel([
     reply([kyleAtoms[2]]),

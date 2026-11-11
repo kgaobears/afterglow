@@ -49,6 +49,26 @@ export function mergeCoverageCandidates(candidates: SourceMemory[], missing: Sou
   return merged.slice(0, limit);
 }
 
+// The coverage model sometimes creates a new contact named "Kyle's brother"
+// when the note only identifies Kyle. Those details belong on Kyle's profile,
+// not on a fabricated contact. Correct only an explicitly possessive relative
+// of a known speaker; named relatives remain independent people.
+export function normalizeRelationalCoverage(missing: SourceMemory[], source: string, existing: SourceMemory[]): SourceMemory[] {
+  const known = new Map(existing.map(item => [item.name.toLowerCase(), item.name]));
+  const relative = /^(.+?)[’']s (brother|sister|daughter|son|mother|father|wife|husband|partner|parent|child)$/i;
+  return missing.map(item => {
+    const match = item.name.match(relative);
+    if (!match) return item;
+    const owner = known.get(match[1].toLowerCase());
+    if (!owner || !new RegExp(`\\b${owner.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(source)) return item;
+    const relationship = match[2].toLowerCase();
+    const detail = new RegExp(`\\b${relationship}\\b`, "i").test(item.detail)
+      ? item.detail
+      : `Their ${relationship} ${item.detail.replace(/^(?:he|she|they)\s+/i, "").replace(/^([A-Z])/, letter => letter.toLowerCase())}`;
+    return { ...item, name: owner, detail, factType: inferFactType(detail, item.factType) };
+  });
+}
+
 // A compact index-only audit avoids rewording the memories during checking.
 // Out-of-range, fractional and duplicate indices are ignored.
 export function acceptedAuditCandidates(output: unknown, candidates: SourceMemory[]): SourceMemory[] {
