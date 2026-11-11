@@ -2,6 +2,18 @@ name: Real Qwen extraction regression
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/real-model-regression.yml'
+      - 'app/local-inference.ts'
+      - 'app/atomization.ts'
+      - 'app/memory-parser.ts'
+      - 'app/source-verification.ts'
+      - 'app/extraction-regression.ts'
+      - 'app/fact-type.ts'
+      - 'app/temporal-facts.ts'
+      - 'scripts/run-model-regression.mjs'
 
 permissions:
   contents: read
