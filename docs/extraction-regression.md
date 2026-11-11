@@ -22,7 +22,7 @@ To queue from the signed-in Site's same-origin browser, POST JSON like `{ "actio
 
 ## Run the actual model from a development terminal
 
-### GitHub Actions (manual, unattended)
+### GitHub Actions (manual or automatic, unattended)
 
 When this repository is hosted on GitHub, open **Actions → Real Qwen extraction regression → Run workflow**. The workflow in `.github/workflows/real-model-regression.yml` runs on a Linux CPU runner and:
 
@@ -31,7 +31,7 @@ When this repository is hosted on GitHub, open **Actions → Real Qwen extractio
 3. Runs both fictional fixtures with coverage and temporal passes enabled, using the production extraction code and prompts.
 4. Uploads `model-regression.json` with **all five passes' prompts, raw responses, errors and scores**, along with the Ollama server log, even when a model test fails.
 
-The workflow is **manual only**; it doesn't run on pushes. If any fixture misses facts, misclassifies facts, or produces an error, the job fails and the artifact remains available for inspection for 14 days. Hosted runner CPU inference can take several minutes. The workflow is only visible after the project has actually been pushed to a GitHub repository; publishing a Sites deployment does not create a GitHub repository or enable Actions by itself.
+The workflow supports manual runs and also automatically runs on pushes to `main` that modify extraction code, regression fixtures, the runner, or the workflow itself. Unrelated UI changes do not consume model-test minutes. If any fixture misses facts, misclassifies facts, or produces an error, the job fails and the artifact remains available for inspection for 14 days. Hosted runner CPU inference can take several minutes.
 
 The browser WebGPU model uses different quantized weights/runtime, so CI is an unattended quality signal rather than a replacement for device testing.
 
