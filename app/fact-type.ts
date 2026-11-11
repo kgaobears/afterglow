@@ -22,6 +22,9 @@ export function inferFactType(detail: string, suggestion?: unknown): FactType {
   const text = detail.trim().toLowerCase();
   const event = /\b(?:last|next|this|past)\s+(?:weekend|week|month|year|night|summer|spring|fall|winter|sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b|\b(?:yesterday|tomorrow|today|recently|currently applying|applying to|preparing for|training for|planning to|plans to|going to|about to|this morning)\b|\b(?:visited|went to|traveled to|returned from|started|began|finished|completed|attended|celebrated|interviewed|applied|accepted an offer|got a new|changed jobs|moved to|bought|sold|won|ran a|is visiting|will visit)\b/i;
   if (event.test(text)) return "timeline";
+  // A relative's age difference is an enduring relationship, even when a
+  // small model labels it as an event or omits the verb "has".
+  if (/\b(?:brother|sister|sibling|son|daughter|mother|father|parent|wife|husband|partner)\b.{0,55}\b(?:older|younger)\b|\b(?:older|younger)\b.{0,55}\b(?:brother|sister|sibling|son|daughter|mother|father|parent)\b/i.test(text)) return "profile";
   if (validFactType(suggestion)) return suggestion;
   const enduring = /\b(?:has|have)\s+(?:(?:an?|\d+|two|three|four|older|younger)\s+)?(?:brother|sister|sibling|child|children|son|daughter|wife|husband|spouse|partner|dog|cat|parents?)\b|\b(?:lives? in|is from|grew up in|works? (?:at|as|in|for)|is (?:an? )?(?:engineer|dentist|teacher|student|doctor|nurse|artist)|likes?|loves?|enjoys?|prefers?|favorite|speaks?|studied|majored in|is allergic to|has a degree in)\b/i;
   return enduring.test(text) ? "profile" : "timeline";

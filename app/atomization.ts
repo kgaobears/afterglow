@@ -86,7 +86,19 @@ export function normalizeRelationalCoverage(missing: SourceMemory[], source: str
 export function consolidateAtomicMemories(candidates: SourceMemory[], source: string): SourceMemory[] {
   const normalized = normalizeRelationalCoverage(candidates, source, candidates);
   const normalizedText = (value: string) => value.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
-  const unique = mergeCoverageCandidates([], normalized);
+  const sourceText = normalizedText(source);
+  const supported = normalized.filter(item => {
+    if (item.factType !== "timeline") return true;
+    // Some small models reverse the visitor and invent a separate relative
+    // contact. Discard only when the source explicitly says the reverse event.
+    const match = item.name.match(/^(.+?)[’']s (brother|sister|son|daughter|mother|father)$/i);
+    if (!match) return true;
+    const owner = match[1], relative = match[2];
+    const reversed = new RegExp(`^${owner.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[’']s ${relative} visited ${owner.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "i");
+    if (!reversed.test(item.detail)) return true;
+    return !new RegExp(`\\b${owner.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} visited (?:his|her|their) ${relative}\\b`, "i").test(sourceText);
+  });
+  const unique = mergeCoverageCandidates([], supported.map(item => ({ ...item, factType: inferFactType(item.detail, item.factType) })));
   const stopwords = new Set(["a", "an", "the", "has", "have", "is", "are", "was", "were", "who", "that", "and", "his", "her", "their", "him", "them", "than", "in", "at", "to", "of"]);
   const terms = (value: string) => new Set(normalizedText(value).split(" ").filter(token => token && !stopwords.has(token)));
   return unique.filter((item, index) => {

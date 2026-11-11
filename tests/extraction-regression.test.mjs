@@ -74,6 +74,23 @@ test("Kyle's five overlapping suggestions become three standalone facts", () => 
   assert.ok(cleaned.every(item => item.name === "Kyle"));
 });
 
+test("a relative's age difference remains a profile even when Qwen calls it a timeline", () => {
+  const memories = consolidateAtomicMemories([
+    { name: "Kyle", detail: "Kyle's brother is two years older than him.", quote: "", factType: "timeline" },
+    { name: "Kyle", detail: "Kyle visited his brother last weekend.", quote: "", factType: "timeline" },
+  ], kyle.note);
+  assert.equal(memories[0].factType, "profile");
+  assert.equal(scoreExtraction(kyle, memories).correctlyTyped, 2);
+});
+
+test("unsupported reversed visitor is excluded when source names the opposite visitor", () => {
+  const memories = consolidateAtomicMemories([
+    { name: "Kyle's brother", detail: "Kyle's brother visited Kyle last weekend.", factType: "timeline", quote: "" },
+    { name: "Kyle", detail: "Kyle visited his brother last weekend.", factType: "timeline", quote: "" },
+  ], kyle.note);
+  assert.deepEqual(memories.map(item => item.name), ["Kyle"]);
+});
+
 test("consolidation retains compound detail when independent facts do not cover it", () => {
   const facts = [
     { name: "Kyle", detail: "Has a brother who is two years older than him and lives in SF", factType: "profile", quote: "" },
