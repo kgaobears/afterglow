@@ -102,6 +102,25 @@ test("recovers Qwen's array-shaped coverage and unnamed-relative attribution", a
   assert.match(model.calls[1].messages[1].content, /ORIGINAL GATHERING NOTE/);
 });
 
+test("atomizer cannot erase a correct first-pass visit by reversing the visitor", async () => {
+  const model = scriptedModel([
+    reply([
+      kyleAtoms[2],
+      memory("Kyle's brother", "Kyle's brother lives in SF.", "profile"),
+    ]),
+    reply([
+      memory("Kyle", "Kyle's brother lives in SF.", "profile"),
+      memory("Kyle's brother", "Kyle's brother visited Kyle last weekend.", "timeline"),
+    ]),
+    JSON.stringify([{ name: "Kyle", detail: "Kyle has a brother who is two years older than him." }]),
+    JSON.stringify({ accepted: [0, 1, 2, 3, 4] }),
+  ]);
+  const result = await runCase(fixture("kyle_brother"), model, { enableCoveragePass: true });
+  assert.equal(result.score.covered, 3);
+  assert.equal(result.score.correctlyTyped, 3);
+  assert.ok(result.memories.some(item => item.name === "Kyle" && /visited his brother/i.test(item.detail)));
+});
+
 test("a model which omits facts still fails the real regression scorer", async () => {
   const model = scriptedModel([
     reply([kyleAtoms[2]]),

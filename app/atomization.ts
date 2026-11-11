@@ -31,6 +31,15 @@ export function retainMissingPeople(atomized: SourceMemory[], initial: SourceMem
   return [...atomized, ...fallbackAtomize(missing)];
 }
 
+// An atomizer is additive, not authoritative: it may accidentally reverse the
+// actor in an already atomic first-pass event. Keep those originals intact.
+// Compound first-pass summaries stay out of this merge; their split atoms
+// remain available from the atomizer/coverage passes.
+export function preserveInitialAtoms(atomized: SourceMemory[], initial: SourceMemory[]): SourceMemory[] {
+  const standalone = initial.filter(memory => !/[.!?]\s+[A-Z]/.test(memory.detail));
+  return mergeCoverageCandidates(atomized, standalone);
+}
+
 // A coverage pass may independently rediscover details lost by the first
 // extraction. Keep its genuinely new candidate rows without deleting or
 // modifying any earlier candidate. Semantic duplicates remain user-reviewable.

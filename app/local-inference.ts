@@ -1,6 +1,6 @@
 import type { MLCEngineInterface } from "@mlc-ai/web-llm";
 import { inspectSourceMemories, reconcileSourceMemories, type MemoryDecision, type SourceMemory, type ReviewedMemory } from "./source-verification";
-import { acceptedAuditCandidates, fallbackAtomize, mergeCoverageCandidates, normalizeRelationalCoverage, retainMissingPeople } from "./atomization";
+import { acceptedAuditCandidates, fallbackAtomize, mergeCoverageCandidates, normalizeRelationalCoverage, preserveInitialAtoms, retainMissingPeople } from "./atomization";
 import { inferFactType } from "./fact-type";
 import { applyTemporalAnnotations } from "./temporal-facts";
 import { parseMemories } from "./memory-parser";
@@ -198,7 +198,7 @@ export async function extractLocally(note: string, people: Array<{ name: string;
   // Re-split any compound sentences the small model returned and rescue any
   // person it dropped entirely. Every atom is independently reviewable.
     const splitAtoms = atomized.flatMap(memory => /[.!?]\s+[A-Z]/.test(memory.detail) ? fallbackAtomize([memory]) : [memory]);
-    candidates = retainMissingPeople(splitAtoms, initial).slice(0, 40);
+    candidates = preserveInitialAtoms(retainMissingPeople(splitAtoms, initial), initial).slice(0, 40);
     report({ atomizedCount: candidates.length, decisions: inspectSourceMemories(note, candidates, []) });
     await checkpoint({ first: initial, candidates }, "Atomic memories ready");
   }
