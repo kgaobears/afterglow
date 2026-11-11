@@ -1,0 +1,1 @@
+ALTER TABLE `gatherings` ADD `reconsider_rejected` integer DEFAULT false NOT NULL;

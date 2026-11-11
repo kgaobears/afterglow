@@ -1,0 +1,64 @@
+import type { SourceMemory } from "./source-verification";
+import { inferFactType } from "./fact-type";
+
+// If a small on-device model cannot complete the atomization pass, preserve
+// concise candidates from its first response. The short `quote` field from
+// older responses was often a generated summary, not a literal quotation.
+export function fallbackAtomize(initial: SourceMemory[]): SourceMemory[] {
+  return initial.flatMap(memory => {
+    const sentences = memory.detail.trim().split(/(?<=[.!?])\s+(?=[A-Z])/).filter(Boolean);
+    const conciseQuote = memory.quote.trim().length >= 8 && memory.quote.trim().length <= 200
+      ? memory.quote.trim() : "";
+    if (sentences.length > 1) {
+      return sentences.map((sentence, index) => ({
+        name: memory.name,
+        detail: index === sentences.length - 1 && conciseQuote ? conciseQuote : sentence,
+        quote: "",
+        // A combined relationship + visit must split into different kinds.
+        factType: inferFactType(index === sentences.length - 1 && conciseQuote ? conciseQuote : sentence),
+      }));
+    }
+    const detail = conciseQuote || memory.detail.trim();
+    return [{ name: memory.name, detail, quote: "", factType: inferFactType(detail, memory.factType) }];
+  });
+}
+
+// Preserve people the atomizer accidentally omitted without repeating people
+// already represented in its result. The fallback can still be reviewed.
+export function retainMissingPeople(atomized: SourceMemory[], initial: SourceMemory[]): SourceMemory[] {
+  const named = new Set(atomized.map(memory => memory.name.trim().toLowerCase()));
+  const missing = initial.filter(memory => !named.has(memory.name.trim().toLowerCase()));
+  return [...atomized, ...fallbackAtomize(missing)];
+}
+
+// A coverage pass may independently rediscover details lost by the first
+// extraction. Keep its genuinely new candidate rows without deleting or
+// modifying any earlier candidate. Semantic duplicates remain user-reviewable.
+export function mergeCoverageCandidates(candidates: SourceMemory[], missing: SourceMemory[], limit = 40): SourceMemory[] {
+  const normalized = (value: string) => value.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+  const seen = new Set(candidates.map(item => `${normalized(item.name)}|${normalized(item.detail)}`));
+  const merged = [...candidates];
+  for (const item of missing) {
+    if (!item.name.trim() || !item.detail.trim()) continue;
+    const key = `${normalized(item.name)}|${normalized(item.detail)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    merged.push(item);
+    if (merged.length >= limit) break;
+  }
+  return merged.slice(0, limit);
+}
+
+// A compact index-only audit avoids rewording the memories during checking.
+// Out-of-range, fractional and duplicate indices are ignored.
+export function acceptedAuditCandidates(output: unknown, candidates: SourceMemory[]): SourceMemory[] {
+  if (!output || typeof output !== "object" || !("accepted" in output)) return [];
+  const values = (output as { accepted: unknown }).accepted;
+  if (!Array.isArray(values)) return [];
+  const unique = new Set<number>();
+  for (const value of values) {
+    const index = typeof value === "string" && /^\d+$/.test(value) ? Number(value) : value;
+    if (typeof index === "number" && Number.isInteger(index) && index >= 0 && index < candidates.length) unique.add(index);
+  }
+  return [...unique].map(index => candidates[index]);
+}

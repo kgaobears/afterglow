@@ -1,0 +1,69 @@
+name: Real Qwen extraction regression
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: afterglow-real-model-regression
+  cancel-in-progress: false
+
+jobs:
+  regression:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out Afterglow
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run deterministic pipeline tests
+        run: npm run test:regression
+
+      - name: Install Ollama
+        run: curl -fsSL https://ollama.com/install.sh | sh
+
+      - name: Start Ollama and download Qwen
+        shell: bash
+        run: |
+          ollama serve > "$RUNNER_TEMP/ollama-server.log" 2>&1 &
+          ready=0
+          for attempt in {1..60}; do
+            if curl -fsS http://127.0.0.1:11434/api/tags > /dev/null; then
+              ready=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$ready" != 1 ]; then
+            echo "Ollama did not become ready" >&2
+            exit 1
+          fi
+          ollama pull qwen2.5:1.5b
+
+      - name: Run real-model regression with full diagnostics
+        shell: bash
+        run: |
+          mkdir -p outputs
+          npm run test:model -- --coverage --temporal --output outputs/model-regression.json
+
+      - name: Upload pass-by-pass model logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qwen-regression-logs-${{ github.run_number }}
+          path: |
+            outputs/model-regression.json
+            ${{ runner.temp }}/ollama-server.log
+          if-no-files-found: warn
+          retention-days: 14
