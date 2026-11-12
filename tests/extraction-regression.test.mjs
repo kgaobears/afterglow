@@ -119,6 +119,22 @@ test("forbidden claims fail even if required memories are present", () => {
   assert.deepEqual(result.forbiddenMatches, ["Discarded New York destination"]);
 });
 
+test("a correctly directed kinship description is not mistaken for a reversed relationship", () => {
+  const fixture = EXTRACTION_FIXTURES.find(item => item.id === "named_relatives");
+  const correct = scoreExtraction(fixture, [
+    { name: "Francis", detail: "Kyle's older brother who lives in San Francisco.", factType: "profile" },
+    { name: "Emily", detail: "Kyle's younger sister who just moved to Seattle.", factType: "timeline" },
+  ]);
+  assert.deepEqual(correct.forbiddenMatches, []);
+  const reversed = scoreExtraction(fixture, [
+    { name: "Francis", detail: "Has an older brother named Kyle who lives in San Francisco.", factType: "profile" },
+    { name: "Emily", detail: "Has a younger sister named Kyle.", factType: "profile" },
+  ]);
+  assert.deepEqual(reversed.forbiddenMatches, [
+    "Francis has older brother Kyle (reversed)", "Emily has younger sister Kyle (reversed)",
+  ]);
+});
+
 test("ambiguous attribution must remain unattributed and reviewed", () => {
   const fixture = EXTRACTION_FIXTURES.find(item => item.id === "ambiguous_pronoun");
   const result = scoreExtraction(fixture, [

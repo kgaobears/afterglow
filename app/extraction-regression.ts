@@ -44,8 +44,8 @@ export const EXTRACTION_FIXTURES: ExtractionFixture[] = [
     ],
     forbidden: [
       { label: "Francis visited Kyle (reversed)", signals: ["Francis", "visited Kyle"] },
-      { label: "Francis has older brother Kyle (reversed)", person: "Francis", signals: ["older brother", "Kyle"] },
-      { label: "Emily has younger sister Kyle (reversed)", person: "Emily", signals: ["younger sister", "Kyle"] },
+      { label: "Francis has older brother Kyle (reversed)", person: "Francis", signals: ["\\b(?:has|have)\\s+(?:an?\\s+)?older brother (?:named )?Kyle\\b"] },
+      { label: "Emily has younger sister Kyle (reversed)", person: "Emily", signals: ["\\b(?:has|have)\\s+(?:an?\\s+)?younger sister (?:named )?Kyle\\b"] },
     ],
   },
   {
