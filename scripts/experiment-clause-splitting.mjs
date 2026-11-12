@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Compare untouched notes with lossless punctuation/conjunction formatting.
+// Compare untouched notes with plain-text punctuation/conjunction line breaks.
 import { mkdir, writeFile } from "node:fs/promises";
 import { extractLocally } from "../app/local-inference.ts";
 import { EXTRACTION_FIXTURES, scoreExtraction } from "../app/extraction-regression.ts";
@@ -10,9 +10,9 @@ function segmentNote(note) {
     .flatMap(sentence => sentence.split(/(?<=,)\s+(?=(?:but|then)\s+\w+\s+\w+)/iu))
     .map(segment => segment.trim())
     .filter(Boolean);
-  // Preserve the word "but"/"then" on the second segment and punctuation
-  // on the first, so corrections and temporal relationships remain visible.
-  return segments.map((segment, index) => `[${index + 1}] ${segment}`).join("\n");
+  // Preserve the source words and punctuation. No line numbers, bullets, or
+  // other formatting cues: only insert newlines at conservative boundaries.
+  return segments.join("\n");
 }
 
 const repeats = Number(process.env.AFTERGLOW_SPLIT_REPEATS || 2);
