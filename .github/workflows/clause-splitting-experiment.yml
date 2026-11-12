@@ -1,10 +1,11 @@
-name: Deterministic clause splitting experiment
+name: Plain-text clause splitting experiment
 
 on:
   push:
     branches: [main]
     paths:
       - '.github/workflows/clause-splitting-experiment.yml'
+      - 'scripts/experiment-clause-splitting.mjs'
   workflow_dispatch:
 
 permissions:
