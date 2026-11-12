@@ -160,7 +160,13 @@ function matches(expected: ExpectedAtomicFact, memory: ExtractionMemory): boolea
 export function scoreExtraction(fixture: ExtractionFixture, memories: ExtractionMemory[]): ExtractionScore {
   const owned = new Map<number, number>();
   const tryMatch = (expectedIndex: number, visited: Set<number>): boolean => {
-    for (let index = 0; index < memories.length; index++) {
+    // Prefer a matching memory with the expected type before falling back to
+    // another semantically matching row. Otherwise an earlier profile mention
+    // of an idea can mask a later, correctly classified timeline update.
+    const indices = memories.map((_, index) => index).sort((a, b) =>
+      Number(memories[b].factType === fixture.expected[expectedIndex].factType) -
+      Number(memories[a].factType === fixture.expected[expectedIndex].factType));
+    for (const index of indices) {
       if (visited.has(index) || !matches(fixture.expected[expectedIndex], memories[index])) continue;
       visited.add(index);
       const previousOwner = owned.get(index);

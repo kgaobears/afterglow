@@ -88,12 +88,15 @@ export function normalizeRelationalCoverage(missing: SourceMemory[], source: str
   const known = new Map(existing.map(item => [item.name.toLowerCase(), item.name]));
   const relative = /^(.+?)[’']s (brother|sister|daughter|son|mother|father|wife|husband|partner|parent|child)$/i;
   return missing.map(item => {
-    if (item.factType === "timeline") return item;
     const match = item.name.match(relative);
     if (!match) return item;
     const owner = known.get(match[1].toLowerCase());
     if (!owner || !new RegExp(`\\b${owner.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(source)) return item;
     const relationship = match[2].toLowerCase();
+    // Keep a reversed-visitor assertion's original subject so the direction
+    // guard below can reject it. Relabeling it first would hide the mistake.
+    const escapedOwner = owner.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    if (item.factType === "timeline" && new RegExp(`^${escapedOwner}[’']s ${relationship} visited ${escapedOwner}\\b`, "i").test(item.detail)) return item;
     const detail = new RegExp(`\\b${relationship}\\b`, "i").test(item.detail)
       ? item.detail
       : `Their ${relationship} ${item.detail.replace(/^(?:he|she|they)\s+/i, "").replace(/^([A-Z])/, letter => letter.toLowerCase())}`;

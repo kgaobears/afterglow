@@ -184,6 +184,29 @@ test("explicit correction removes the superseded destination but retains the rep
   assert.deepEqual(scoreExtraction(fixture, memories).forbiddenMatches, []);
 });
 
+test("an explicitly possessive unnamed wife update stays with Michael", () => {
+  const fixture = EXTRACTION_FIXTURES.find(item => item.id === "self_correction");
+  const cleaned = consolidateAtomicMemories([
+    { name: "Michael", detail: "Moving to Boston next month", factType: "timeline", quote: "" },
+    { name: "Michael's wife", detail: "Found a job in Boston", factType: "timeline", quote: "" },
+  ], fixture.note);
+  assert.deepEqual(cleaned.map(x => x.name), ["Michael", "Michael"]);
+  const result = scoreExtraction(fixture, cleaned);
+  assert.equal(result.covered, 2);
+  assert.deepEqual(result.forbiddenMatches, []);
+});
+
+test("scoring prefers correctly typed ideation when a profile paraphrase also matches", () => {
+  const fixture = EXTRACTION_FIXTURES.find(item => item.id === "hypotheticals");
+  const result = scoreExtraction(fixture, [
+    { name: "Jason", detail: "Works at Microsoft", factType: "profile" },
+    { name: "Jason", detail: "Considered quitting to start a restaurant", factType: "profile" },
+    { name: "Jason", detail: "Plans to open a restaurant next year", factType: "timeline" },
+  ]);
+  assert.equal(result.correctlyTyped, 2);
+  assert.deepEqual(result.wrongType, []);
+});
+
 test("distinct comma-separated milestones split while related residence context stays bundled", () => {
   const source = EXTRACTION_FIXTURES.find(item => item.id === "multiple_dates");
   const parts = splitIndependentEvents({ name: "Emily", detail: "Emily graduated from Berkeley in 2022, started working at Nvidia in 2023, and got engaged last weekend.", factType: "timeline", quote: "" });
