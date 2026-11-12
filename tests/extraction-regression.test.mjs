@@ -152,10 +152,22 @@ test("optional historical facts do not affect required coverage", () => {
   const notes = [
     { name: "Sarah", detail: "Recently joined Apple", factType: "timeline" },
     { name: "Sarah", detail: "Works at Apple", factType: "profile" },
-    { name: "Sarah", detail: "Temporarily staying with parents", factType: "timeline" },
-    { name: "Sarah", detail: "Looking for an apartment in Cupertino", factType: "timeline" },
+    { name: "Sarah", detail: "Temporarily staying with parents while looking for an apartment in Cupertino", factType: "timeline" },
   ];
   const result = scoreExtraction(fixture, notes);
   assert.equal(result.covered, result.total);
   assert.deepEqual(result.forbiddenMatches, []);
+});
+
+test("one meaningful profile memory can bundle a relative's residence and duration", () => {
+  const fixture = EXTRACTION_FIXTURES.find(item => item.id === "semantic_duplicates");
+  const bundled = [{ name: "Kyle", detail: "Kyle's brother Francis lives in San Francisco and has been there for three years.", factType: "profile" }];
+  const result = scoreExtraction(fixture, bundled);
+  assert.equal(result.covered, 1);
+  assert.equal(result.total, 1);
+  assert.equal(result.correctlyTyped, 1);
+  assert.deepEqual(result.missing, []);
+  assert.equal(result.redundantCount, 0);
+  assert.equal(scoreExtraction(fixture, [{ name: "Francis", detail: bundled[0].detail, factType: "profile" }]).covered, 0);
+  assert.equal(scoreExtraction(fixture, [{ name: "Kyle", detail: "Has a brother named Francis", factType: "profile" }]).covered, 0);
 });

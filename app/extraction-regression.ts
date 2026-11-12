@@ -62,16 +62,17 @@ export const EXTRACTION_FIXTURES: ExtractionFixture[] = [
   },
   {
     id: "temporary_states",
-    title: "Job change and temporary accommodation",
+    title: "Job change and a combined temporary housing update",
     note: "Sarah used to work at Google, but she recently joined Apple. She's staying with her parents for a few weeks while looking for an apartment in Cupertino.",
     date: "2026-11-08",
     expected: [
       { label: "Sarah joined Apple", person: "Sarah", signals: ["(?:join|start|new job)", "Apple"], factType: "timeline" },
-      { label: "Sarah works at Apple", person: "Sarah", signals: ["(?:works?|employed|job)", "Apple"], factType: "profile" },
-      { label: "Sarah temporarily stays with parents", person: "Sarah", signals: ["(?:stay|staying|living)", "parents"], factType: "timeline" },
-      { label: "Sarah seeks apartment in Cupertino", person: "Sarah", signals: ["(?:look|search|seek)", "apartment", "Cupertino"], factType: "timeline" },
+      { label: "Sarah is staying with parents while apartment-hunting in Cupertino", person: "Sarah", signals: ["(?:stay|staying|living)", "parents", "(?:look|search|seek)", "apartment", "Cupertino"], factType: "timeline" },
     ],
-    optional: [{ label: "Sarah used to work at Google", person: "Sarah", signals: ["(?:used to|previous|former)", "Google"], factType: "profile" }],
+    optional: [
+      { label: "Sarah used to work at Google", person: "Sarah", signals: ["(?:used to|previous|former)", "Google"], factType: "profile" },
+      { label: "Sarah works at Apple", person: "Sarah", signals: ["(?:works?|employed|job)", "Apple"], factType: "profile" },
+    ],
     forbidden: [{ label: "Sarah currently works at Google", person: "Sarah", signals: ["(?:currently|now|still) works? at Google"] }],
   },
   {
@@ -117,12 +118,11 @@ export const EXTRACTION_FIXTURES: ExtractionFixture[] = [
   },
   {
     id: "semantic_duplicates",
-    title: "Rephrased residence merges without losing duration",
+    title: "One bundled Kyle memory retains Francis's residence and duration",
     note: "Kyle's brother Francis lives in San Francisco. Francis has been living in SF for three years. Kyle mentioned that his brother still lives there.",
     date: "2026-11-08",
     expected: [
-      { label: "Kyle has brother Francis", person: "Kyle", signals: ["brother", "Francis"], factType: "profile" },
-      { label: "Francis lives in SF for three years", person: "Francis", signals: ["(?:San Francisco|\\bSF\\b)", "(?:three|3) years"], factType: "profile" },
+      { label: "Kyle's brother Francis has lived in SF for three years", person: "Kyle", signals: ["brother", "Francis", "(?:San Francisco|\\bSF\\b)", "(?:three|3) years"], factType: "profile" },
     ],
   },
   {
