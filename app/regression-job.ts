@@ -41,7 +41,7 @@ export function scoreReportedRun(options: RegressionJobOptions, entries: unknown
     if (!entry || !Array.isArray(entry.memories)) throw new Error(`Missing results for ${fixture.id}`);
     const memories = entry.memories.slice(0, 40).filter((item): item is ExtractionMemory =>
       Boolean(item && typeof item === "object" && typeof item.name === "string" && typeof item.detail === "string"))
-      .map(item => ({ name: item.name.slice(0, 120), detail: item.detail.slice(0, 1000), factType: item.factType }));
+      .map(item => ({ name: item.name.slice(0, 120), detail: item.detail.slice(0, 1000), factType: item.factType, verification: item.verification }));
     const score = scoreExtraction(fixture, memories);
     return {
       id: fixture.id, title: fixture.title, sourceNote: fixture.note, gatheringDate: fixture.date,
@@ -56,7 +56,7 @@ export function scoreReportedRun(options: RegressionJobOptions, entries: unknown
 }
 
 export function regressionSummary(results: ReturnType<typeof scoreReportedRun>) {
-  const passed = results.every(result => !result.error && result.score.covered === result.score.total && result.score.correctlyTyped === result.score.total && result.score.redundantCount === 0);
+  const passed = results.every(result => !result.error && result.score.covered === result.score.total && result.score.correctlyTyped === result.score.total && result.score.redundantCount === 0 && result.score.forbiddenMatches.length === 0 && result.score.wrongReview.length === 0);
   return { passed, covered: results.reduce((sum, result) => sum + result.score.covered, 0),
     total: results.reduce((sum, result) => sum + result.score.total, 0),
     correctlyTyped: results.reduce((sum, result) => sum + result.score.correctlyTyped, 0) };

@@ -12,7 +12,7 @@ const allThree = [
 
 test("Kyle passes with a brother profile and a separate visit event", () => {
   assert.deepEqual(scoreExtraction(kyle, allThree), {
-    covered: 2, total: 2, correctlyTyped: 2, missing: [], wrongType: [], matchingMemoryIndices: [0, 2], redundantCount: 0,
+    covered: 2, total: 2, correctlyTyped: 2, missing: [], wrongType: [], matchingMemoryIndices: [0, 2], redundantCount: 0, forbiddenMatches: [], wrongReview: [],
   });
 });
 
@@ -100,9 +100,46 @@ test("consolidation retains compound detail when independent facts do not cover 
 });
 
 test("all fixtures have unique IDs and expectations", () => {
+  assert.equal(EXTRACTION_FIXTURES.length, 10);
   assert.equal(new Set(EXTRACTION_FIXTURES.map(item => item.id)).size, EXTRACTION_FIXTURES.length);
   for (const fixture of EXTRACTION_FIXTURES) {
     assert.ok(fixture.note && fixture.date && fixture.expected.length);
     assert.equal(new Set(fixture.expected.map(item => item.label)).size, fixture.expected.length);
   }
+});
+
+test("forbidden claims fail even if required memories are present", () => {
+  const fixture = EXTRACTION_FIXTURES.find(item => item.id === "self_correction");
+  const result = scoreExtraction(fixture, [
+    { name: "Michael", detail: "Moving to Boston next month", factType: "timeline" },
+    { name: "Michael", detail: "His wife found a job in Boston", factType: "timeline" },
+    { name: "Michael", detail: "Moving to New York next month", factType: "timeline" },
+  ]);
+  assert.equal(result.covered, 2);
+  assert.deepEqual(result.forbiddenMatches, ["Discarded New York destination"]);
+});
+
+test("ambiguous attribution must remain unattributed and reviewed", () => {
+  const fixture = EXTRACTION_FIXTURES.find(item => item.id === "ambiguous_pronoun");
+  const result = scoreExtraction(fixture, [
+    { name: "Michael", detail: "Moving to Texas", factType: "timeline" },
+    { name: "Unattributed", detail: "Someone got promoted", factType: "timeline", verification: "verified" },
+    { name: "Jason", detail: "Was promoted", factType: "timeline" },
+  ]);
+  assert.equal(result.covered, 2);
+  assert.deepEqual(result.wrongReview, ["Unattributed promotion for review"]);
+  assert.deepEqual(result.forbiddenMatches, ["Promotion assigned to Jason"]);
+});
+
+test("optional historical facts do not affect required coverage", () => {
+  const fixture = EXTRACTION_FIXTURES.find(item => item.id === "temporary_states");
+  const notes = [
+    { name: "Sarah", detail: "Recently joined Apple", factType: "timeline" },
+    { name: "Sarah", detail: "Works at Apple", factType: "profile" },
+    { name: "Sarah", detail: "Temporarily staying with parents", factType: "timeline" },
+    { name: "Sarah", detail: "Looking for an apartment in Cupertino", factType: "timeline" },
+  ];
+  const result = scoreExtraction(fixture, notes);
+  assert.equal(result.covered, result.total);
+  assert.deepEqual(result.forbiddenMatches, []);
 });

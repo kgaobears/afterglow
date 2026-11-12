@@ -2,9 +2,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { fixturesForRun, parseRegressionJobOptions, regressionSummary, scoreReportedRun } from "../app/regression-job.ts";
 import { acquireLocalModel, currentLocalModelActivity, releaseLocalModel } from "../app/local-model-activity.ts";
+import { EXTRACTION_FIXTURES } from "../app/extraction-regression.ts";
 
 test("only source-controlled fictional fixtures can be queued", () => {
-  assert.deepEqual(fixturesForRun(null).map(item => item.id), ["kyle_brother", "church_group"]);
+  assert.deepEqual(fixturesForRun(null).map(item => item.id), EXTRACTION_FIXTURES.map(item => item.id));
   assert.deepEqual(parseRegressionJobOptions({}), {
     modelChoice: "quality", fixtureId: null, coverageEnabled: false, temporalEnabled: false,
   });

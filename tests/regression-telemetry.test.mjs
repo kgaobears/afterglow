@@ -6,7 +6,7 @@ const fixtureResult = {
   id: "kyle_brother", title: "Kyle example", sourceNote: "Kyle visited his older brother in SF.", gatheringDate: "2026-11-11",
   model: "quality", coverageEnabled: false, temporalEnabled: false, durationMs: 2200, progress: [],
   memories: [{ name: "Kyle", detail: "Visited brother last weekend", factType: "timeline" }],
-  score: { covered: 1, total: 3, correctlyTyped: 1, missing: ["Brother's age difference", "Brother lives in SF"], wrongType: [], matchingMemoryIndices: [0] },
+  score: { covered: 1, total: 3, correctlyTyped: 1, missing: ["Brother's age difference", "Brother lives in SF"], wrongType: [], matchingMemoryIndices: [0], redundantCount: 0, forbiddenMatches: [], wrongReview: [] },
   diagnostics: { firstRequest: [{ role: "system", content: "Return JSON" }, { role: "user", content: "Kyle visited his older brother in SF." }], firstRaw: "INVALID JSON", firstError: "Unexpected token", atomizeRaw: '{"memories":[]}', atomizeParsed: 0, auditRaw: '{"accepted":[0]}', auditParsed: 1 },
 };
 

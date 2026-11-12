@@ -123,11 +123,13 @@ async function main() {
       memories, score: scoreExtraction(fixture, memories), ...(error ? { error } : {}) });
     if (!options.json) {
       const last = results.at(-1);
-      const passed = !last.error && last.score.covered === last.score.total && last.score.correctlyTyped === last.score.total && last.score.redundantCount === 0;
+      const passed = !last.error && last.score.covered === last.score.total && last.score.correctlyTyped === last.score.total && last.score.redundantCount === 0 && last.score.forbiddenMatches.length === 0 && last.score.wrongReview.length === 0;
       process.stdout.write(`${passed ? "PASS" : "FAIL"} ${fixture.id}: ${last.score.covered}/${last.score.total} facts, ${last.score.correctlyTyped}/${last.score.total} types (${last.durationMs} ms)\n`);
       if (last.score.missing.length) process.stdout.write(`  Missing: ${last.score.missing.join(", ")}\n`);
       if (last.score.wrongType.length) process.stdout.write(`  Wrong type: ${last.score.wrongType.join(", ")}\n`);
       if (last.score.redundantCount) process.stdout.write(`  Redundant notes: ${last.score.redundantCount}\n`);
+      if (last.score.forbiddenMatches.length) process.stdout.write(`  Forbidden claims: ${last.score.forbiddenMatches.join(", ")}\n`);
+      if (last.score.wrongReview.length) process.stdout.write(`  Not marked for review: ${last.score.wrongReview.join(", ")}\n`);
       if (last.error) process.stdout.write(`  Error: ${last.error}\n`);
     }
     // If the inference backend is unavailable there is no value in trying
@@ -135,7 +137,7 @@ async function main() {
     if (isBackendFailure(error)) break;
   }
   const passed = results.length === fixtures.length && results.every(item =>
-    !item.error && item.score.covered === item.score.total && item.score.correctlyTyped === item.score.total && item.score.redundantCount === 0);
+    !item.error && item.score.covered === item.score.total && item.score.correctlyTyped === item.score.total && item.score.redundantCount === 0 && item.score.forbiddenMatches.length === 0 && item.score.wrongReview.length === 0);
   const report = { passed, generatedAt: new Date().toISOString(),
     config: { endpoint: options.endpoint, model: options.model, coverage: options.coverage, temporal: options.temporal },
     results };
