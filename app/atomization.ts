@@ -1,5 +1,6 @@
 import type { SourceMemory } from "./source-verification";
 import { inferFactType } from "./fact-type";
+import { preserveRelationshipDirections } from "./relationship-anchors";
 
 // If a small on-device model cannot complete the atomization pass, preserve
 // concise candidates from its first response. The short `quote` field from
@@ -87,7 +88,7 @@ export function consolidateAtomicMemories(candidates: SourceMemory[], source: st
   const normalized = normalizeRelationalCoverage(candidates, source, candidates);
   const normalizedText = (value: string) => value.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
   const sourceText = normalizedText(source);
-  const supported = normalized.filter(item => {
+  const supported = preserveRelationshipDirections(normalized, source).filter(item => {
     if (item.factType !== "timeline") return true;
     // Some small models reverse the visitor and invent a separate relative
     // contact. Discard only when the source explicitly says the reverse event.

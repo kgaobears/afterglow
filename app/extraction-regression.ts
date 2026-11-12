@@ -42,7 +42,11 @@ export const EXTRACTION_FIXTURES: ExtractionFixture[] = [
       { label: "Emily moved to Seattle", person: "Emily", signals: ["mov", "Seattle"], factType: "timeline" },
       { label: "Kyle visited Francis", person: "Kyle", signals: ["visit", "Francis", "weekend"], factType: "timeline" },
     ],
-    forbidden: [{ label: "Francis visited Kyle (reversed)", signals: ["Francis", "visited Kyle"] }],
+    forbidden: [
+      { label: "Francis visited Kyle (reversed)", signals: ["Francis", "visited Kyle"] },
+      { label: "Francis has older brother Kyle (reversed)", person: "Francis", signals: ["older brother", "Kyle"] },
+      { label: "Emily has younger sister Kyle (reversed)", person: "Emily", signals: ["younger sister", "Kyle"] },
+    ],
   },
   {
     id: "ambiguous_pronoun",

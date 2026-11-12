@@ -131,3 +131,22 @@ test("a model which omits facts still fails the real regression scorer", async (
   assert.equal(result.score.covered, 1);
   assert.deepEqual(result.score.missing, ["Has a brother two years older"]);
 });
+
+test("directional relationship anchors survive model passes and remove invented reversals", async () => {
+  const named = fixture("named_relatives");
+  const model = scriptedModel([
+    reply([memory("Kyle", "Has an older brother named Francis", "profile")]),
+    reply([
+      memory("Kyle", "Has an older brother named Francis", "profile"),
+      memory("Francis", "Has an older brother named Kyle", "profile"),
+      memory("Emily", "Has a younger sister named Kyle", "profile"),
+      memory("Emily", "Moved to Seattle", "timeline"),
+    ]),
+    JSON.stringify({ accepted: [0, 1, 2, 3] }),
+  ]);
+  const result = await runCase(named, model);
+  assert.equal(result.memories.length, 2);
+  assert.ok(result.memories.some(item => item.name === "Kyle" && /Francis/.test(item.detail)));
+  assert.ok(result.memories.some(item => item.name === "Emily" && /Seattle/.test(item.detail)));
+  assert.match(model.calls[1].messages[1].content, /direction is fixed/);
+});
