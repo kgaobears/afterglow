@@ -150,3 +150,21 @@ test("directional relationship anchors survive model passes and remove invented 
   assert.ok(result.memories.some(item => item.name === "Kyle" && /Emily.*Seattle/.test(item.detail)));
   assert.match(model.calls[1].messages[1].content, /direction is fixed/);
 });
+
+test("final audit verifies Michael's wife's job under Michael after normalization", async () => {
+  const caseFixture = fixture("self_correction");
+  const model = scriptedModel([
+    reply([memory("Michael", "Moving to Boston next month", "timeline")]),
+    reply([
+      memory("Michael", "Moving to Boston next month", "timeline"),
+      memory("Michael's wife", "Found a job in Boston", "timeline"),
+    ]),
+    JSON.stringify({ accepted: [0, 1] }),
+  ]);
+  const result = await runCase(caseFixture, model);
+  assert.equal(result.memories.length, 2);
+  assert.deepEqual(result.memories.map(x => x.verification), ["verified", "verified"]);
+  assert.equal(result.score.covered, 2);
+  assert.deepEqual(result.score.wrongReview, []);
+  assert.match(model.calls[2].messages[1].content, /Their wife found a job in Boston/);
+});

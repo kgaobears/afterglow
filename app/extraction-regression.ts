@@ -2,7 +2,7 @@ import type { FactType } from "./fact-type";
 import { consolidateAtomicMemories } from "./atomization";
 
 export type ExtractionMemory = { name: string; detail: string; factType?: FactType; verification?: string };
-export type ExpectedAtomicFact = { label: string; person: string; signals: string[]; factType: FactType; rejectSignals?: string[]; reviewRequired?: boolean };
+export type ExpectedAtomicFact = { label: string; person: string; signals: string[]; factType: FactType; rejectSignals?: string[]; reviewRequired?: boolean; verifiedRequired?: boolean };
 export type ForbiddenFact = { label: string; person?: string; signals: string[] };
 export type ExtractionFixture = { id: string; title: string; note: string; date: string; expected: ExpectedAtomicFact[]; optional?: ExpectedAtomicFact[]; forbidden?: ForbiddenFact[] };
 
@@ -77,11 +77,12 @@ export const EXTRACTION_FIXTURES: ExtractionFixture[] = [
     date: "2026-11-08",
     expected: [
       { label: "Michael moving to Boston", person: "Michael", signals: ["mov", "Boston"], factType: "timeline" },
-      { label: "Michael's wife found a job in Boston", person: "Michael", signals: ["wife", "job", "Boston"], factType: "timeline" },
+      { label: "Michael's wife found a job in Boston", person: "Michael", signals: ["wife", "job", "Boston"], rejectSignals: ["\\bnot\\s+(?:found|find|got|hired)"], factType: "timeline", verifiedRequired: true },
     ],
     forbidden: [
       { label: "Discarded New York destination", signals: ["(?:mov(?:ing|es|e)\\s+to\\s+New York|New York\\s+instead)"] },
       { label: "Fabricated unnamed wife contact", person: "Michael's wife", signals: ["job"] },
+      { label: "Incorrect negation of wife's job", signals: ["wife", "\\bnot\\s+(?:found|find|got|hired)", "job"] },
     ],
   },
   {
@@ -181,7 +182,10 @@ export function scoreExtraction(fixture: ExtractionFixture, memories: Extraction
   const matched = new Map([...owned].map(([memoryIndex, expectedIndex]) => [expectedIndex, memoryIndex]));
   const missing = fixture.expected.filter((_, index) => !matched.has(index)).map(item => item.label);
   const wrongType = fixture.expected.filter((item, index) => matched.has(index) && memories[matched.get(index)!].factType !== item.factType).map(item => item.label);
-  const wrongReview = fixture.expected.filter((item, index) => item.reviewRequired && matched.has(index) && memories[matched.get(index)!].verification !== "review").map(item => item.label);
+  const wrongReview = fixture.expected.filter((item, index) => matched.has(index) && (
+    (item.reviewRequired && memories[matched.get(index)!].verification !== "review") ||
+    (item.verifiedRequired && memories[matched.get(index)!].verification !== "verified")
+  )).map(item => item.label);
   const forbiddenMatches = (fixture.forbidden || []).filter(item => memories.some(memory =>
     (!item.person || memory.name.trim().toLowerCase() === item.person.toLowerCase())
     && item.signals.every(signal => new RegExp(signal, "i").test(memory.detail)))).map(item => item.label);

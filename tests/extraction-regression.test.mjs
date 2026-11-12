@@ -112,7 +112,7 @@ test("forbidden claims fail even if required memories are present", () => {
   const fixture = EXTRACTION_FIXTURES.find(item => item.id === "self_correction");
   const result = scoreExtraction(fixture, [
     { name: "Michael", detail: "Moving to Boston next month", factType: "timeline" },
-    { name: "Michael", detail: "His wife found a job in Boston", factType: "timeline" },
+    { name: "Michael", detail: "His wife found a job in Boston", factType: "timeline", verification: "verified" },
     { name: "Michael", detail: "Moving to New York next month", factType: "timeline" },
   ]);
   assert.equal(result.covered, 2);
@@ -123,10 +123,21 @@ test("an explicit correction may mention the discarded city as context", () => {
   const fixture = EXTRACTION_FIXTURES.find(item => item.id === "self_correction");
   const result = scoreExtraction(fixture, [
     { name: "Michael", detail: "Moving to Boston instead of New York", factType: "timeline" },
-    { name: "Michael", detail: "His wife found a job in Boston", factType: "timeline" },
+    { name: "Michael", detail: "His wife found a job in Boston", factType: "timeline", verification: "verified" },
   ]);
   assert.deepEqual(result.forbiddenMatches, []);
   assert.equal(result.covered, 2);
+});
+
+test("Michael's wife update counts only when verified, not review-only", () => {
+  const fixture = EXTRACTION_FIXTURES.find(item => item.id === "self_correction");
+  const notes = [
+    { name: "Michael", detail: "Moving to Boston next month", factType: "timeline" },
+    { name: "Michael", detail: "His wife found a job in Boston", factType: "timeline", verification: "review" },
+  ];
+  assert.deepEqual(scoreExtraction(fixture, notes).wrongReview, ["Michael's wife found a job in Boston"]);
+  assert.deepEqual(scoreExtraction(fixture, [{ ...notes[0] }, { ...notes[1], verification: "verified" }]).wrongReview, []);
+  assert.deepEqual(scoreExtraction(fixture, [...notes, { name: "Michael", detail: "His wife not found a job in Boston", factType: "timeline" }]).forbiddenMatches, ["Incorrect negation of wife's job"]);
 });
 
 test("a correctly directed kinship description is not mistaken for a reversed relationship", () => {
