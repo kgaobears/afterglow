@@ -33,7 +33,7 @@ jobs:
           done
           ollama pull qwen2.5:1.5b
       - name: Run five rounds across six wordings
-        run: node --experimental-strip-types scripts/experiment-clause-order.mjs
+        run: node --import tsx scripts/experiment-clause-order.mjs
       - name: Upload raw experiment logs
         if: always()
         uses: actions/upload-artifact@v4
