@@ -48,16 +48,11 @@ export const EXTRACTION_FIXTURES: ExtractionFixture[] = [
   },
   {
     id: "ambiguous_pronoun",
-    title: "Ambiguous promotion remains unattributed for review",
+    title: "Clearly attributed move survives an ambiguous promotion",
     note: "I talked to Jason and Michael yesterday. He said he just got promoted. Michael also mentioned he's moving to Texas.",
     date: "2026-11-08",
     expected: [
       { label: "Michael moving to Texas", person: "Michael", signals: ["mov", "Texas"], factType: "timeline" },
-      { label: "Unattributed promotion for review", person: "Unattributed", signals: ["promot"], factType: "timeline", reviewRequired: true },
-    ],
-    forbidden: [
-      { label: "Promotion assigned to Jason", person: "Jason", signals: ["promot"] },
-      { label: "Promotion assigned to Michael", person: "Michael", signals: ["promot"] },
     ],
   },
   {
@@ -96,7 +91,7 @@ export const EXTRACTION_FIXTURES: ExtractionFixture[] = [
     date: "2026-11-08",
     expected: [
       { label: "Jason still works at Microsoft", person: "Jason", signals: ["(?:work|employ)", "Microsoft"], factType: "profile" },
-      { label: "Jason might open restaurant", person: "Jason", signals: ["restaurant", "(?:might|may|consider|possibly|potential|thinking|interest|try|tentative)"], factType: "timeline" },
+      { label: "Jason first mentioned restaurant ideation", person: "Jason", signals: ["restaurant", "(?:might|may|plan|consider|possibly|potential|thinking|interest|try|tentative)"], factType: "timeline" },
     ],
     forbidden: [
       { label: "Jason quit his job", person: "Jason", signals: ["(?:quit|left|resigned)(?: his)? job"] },

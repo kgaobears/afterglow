@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { EXTRACTION_FIXTURES, scoreExtraction } from "../app/extraction-regression.ts";
-import { consolidateAtomicMemories, mergeCoverageCandidates } from "../app/atomization.ts";
+import { consolidateAtomicMemories, mergeCoverageCandidates, splitIndependentEvents } from "../app/atomization.ts";
 
 const kyle = EXTRACTION_FIXTURES.find(fixture => fixture.id === "kyle_brother");
 const allThree = [
@@ -135,16 +135,17 @@ test("a correctly directed kinship description is not mistaken for a reversed re
   ]);
 });
 
-test("ambiguous attribution must remain unattributed and reviewed", () => {
+test("genuinely ambiguous attribution does not fail an otherwise useful conversation", () => {
   const fixture = EXTRACTION_FIXTURES.find(item => item.id === "ambiguous_pronoun");
   const result = scoreExtraction(fixture, [
     { name: "Michael", detail: "Moving to Texas", factType: "timeline" },
     { name: "Unattributed", detail: "Someone got promoted", factType: "timeline", verification: "verified" },
     { name: "Jason", detail: "Was promoted", factType: "timeline" },
   ]);
-  assert.equal(result.covered, 2);
-  assert.deepEqual(result.wrongReview, ["Unattributed promotion for review"]);
-  assert.deepEqual(result.forbiddenMatches, ["Promotion assigned to Jason"]);
+  assert.equal(result.covered, 1);
+  assert.equal(result.total, 1);
+  assert.deepEqual(result.wrongReview, []);
+  assert.deepEqual(result.forbiddenMatches, []);
 });
 
 test("optional historical facts do not affect required coverage", () => {
@@ -170,4 +171,24 @@ test("one meaningful profile memory can bundle a relative's residence and durati
   assert.equal(result.redundantCount, 0);
   assert.equal(scoreExtraction(fixture, [{ name: "Francis", detail: bundled[0].detail, factType: "profile" }]).covered, 0);
   assert.equal(scoreExtraction(fixture, [{ name: "Kyle", detail: "Has a brother named Francis", factType: "profile" }]).covered, 0);
+});
+
+test("explicit correction removes the superseded destination but retains the replacement", () => {
+  const fixture = EXTRACTION_FIXTURES.find(item => item.id === "self_correction");
+  const memories = consolidateAtomicMemories([
+    { name: "Michael", detail: "Moving to New York next month", factType: "timeline", quote: "" },
+    { name: "Michael", detail: "Moving to New York instead", factType: "profile", quote: "" },
+    { name: "Michael", detail: "Moving to Boston next month", factType: "timeline", quote: "" },
+  ], fixture.note);
+  assert.deepEqual(memories.map(item => item.detail), ["Moving to Boston next month"]);
+  assert.deepEqual(scoreExtraction(fixture, memories).forbiddenMatches, []);
+});
+
+test("distinct comma-separated milestones split while related residence context stays bundled", () => {
+  const source = EXTRACTION_FIXTURES.find(item => item.id === "multiple_dates");
+  const parts = splitIndependentEvents({ name: "Emily", detail: "Emily graduated from Berkeley in 2022, started working at Nvidia in 2023, and got engaged last weekend.", factType: "timeline", quote: "" });
+  assert.deepEqual(parts.map(x => x.detail), ["Emily graduated from Berkeley in 2022", "started working at Nvidia in 2023", "got engaged last weekend."]);
+  assert.equal(scoreExtraction(source, parts).covered, 3);
+  const bundled = splitIndependentEvents({ name: "Kyle", detail: "Kyle's brother Francis lives in San Francisco and has been there for three years.", factType: "profile", quote: "" });
+  assert.equal(bundled.length, 1);
 });

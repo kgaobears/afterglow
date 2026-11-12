@@ -2,6 +2,27 @@ import type { SourceMemory } from "./source-verification";
 import { inferFactType } from "./fact-type";
 import { attachNamedRelativeUpdates, preserveRelationshipDirections } from "./relationship-anchors";
 
+// Small models sometimes repeat a comma-separated list of milestones instead
+// of splitting it. Split only explicit, independently completed actions; leave
+// related context (residence, relatives, motivations) bundled.
+export function splitIndependentEvents(memory: SourceMemory): SourceMemory[] {
+  const clauses = memory.detail.split(/,\s*(?:and\s+)?(?=(?:graduated|started|joined|got|moved|visited|became|was hired)\b)/i);
+  if (clauses.length < 2 || !/\b(?:graduated|started|joined|got engaged|moved|visited)\b/i.test(clauses[0])) return [memory];
+  return clauses.map(detail => ({ ...memory, detail: detail.trim(), quote: "", factType: inferFactType(detail.trim(), "timeline") }));
+}
+
+// An explicit correction changes the destination of an already stated move.
+// This deliberately does not attempt to resolve ambiguous pronouns or infer
+// implicit contradictions; those remain the user's responsibility.
+export function discardExplicitlySupersededMoves(candidates: SourceMemory[], source: string): SourceMemory[] {
+  const correction = /\b([A-Z][a-z]+)\b[^.!?]{0,100}\bmov(?:ing|es|e)\s+to\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\b[\s\S]{0,180}?\b(?:actually|corrected|correction)\b[\s\S]{0,150}?\bmov(?:ing|es|e)\s+to\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s+instead/gi;
+  const superseded = [...source.matchAll(correction)].map(match => ({ person: match[1].toLowerCase(), oldPlace: match[2], newPlace: match[3] }));
+  return candidates.filter(memory => !superseded.some(({ person, oldPlace, newPlace }) =>
+    memory.name.trim().toLowerCase() === person
+    && new RegExp(`\\bmov(?:ing|es|e)\\s+to\\s+${oldPlace.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(memory.detail)
+    && !new RegExp(`\\b${newPlace.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(memory.detail)));
+}
+
 // If a small on-device model cannot complete the atomization pass, preserve
 // concise candidates from its first response. The short `quote` field from
 // older responses was often a generated summary, not a literal quotation.
@@ -85,7 +106,7 @@ export function normalizeRelationalCoverage(missing: SourceMemory[], source: str
 // fully cover a compound profile note. Never remove a compound if any of its
 // meaningful terms would be lost, and never merge distinct timeline events.
 export function consolidateAtomicMemories(candidates: SourceMemory[], source: string): SourceMemory[] {
-  const normalized = normalizeRelationalCoverage(candidates, source, candidates);
+  const normalized = normalizeRelationalCoverage(discardExplicitlySupersededMoves(candidates, source), source, candidates);
   const normalizedText = (value: string) => value.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
   const sourceText = normalizedText(source);
   const supported = preserveRelationshipDirections(normalized, source).filter(item => {
