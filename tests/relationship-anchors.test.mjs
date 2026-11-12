@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { attachNamedRelativeUpdates, explicitRelationshipAnchors, preserveRelationshipDirections } from "../app/relationship-anchors.ts";
 import { EXTRACTION_FIXTURES } from "../app/extraction-regression.ts";
+import { consolidateAtomicMemories } from "../app/atomization.ts";
 
 const note = EXTRACTION_FIXTURES.find(item => item.id === "named_relatives").note;
 const memory = (name, detail) => ({ name, detail, factType: "profile", quote: "" });
@@ -38,4 +39,18 @@ test("named relatives' profile and timeline updates can be stored under Kyle", (
   assert.deepEqual(updates.map(item => item.name), ["Kyle", "Kyle"]);
   assert.match(updates[0].detail, /older brother Francis lives in San Francisco/);
   assert.match(updates[1].detail, /younger sister Emily moved to Seattle/);
+});
+
+test("one profile and two distinct events survive cleanup without invented contacts", () => {
+  const proposed = [
+    { ...memory("Kyle", "Visited Francis, his older brother, last weekend"), factType: "timeline" },
+    memory("Francis", "Kyle's older brother who lives in San Francisco"),
+    { ...memory("Emily", "Kyle's younger sister who just moved to Seattle"), factType: "timeline" },
+    { ...memory("Has a younger sister who just moved to Seattle", "Kyle's younger sister Emily just moved to Seattle"), factType: "timeline" },
+  ];
+  const result = consolidateAtomicMemories(proposed, note);
+  assert.equal(result.length, 3);
+  assert.ok(result.every(item => item.name === "Kyle"));
+  assert.equal(result.filter(item => item.factType === "profile").length, 1);
+  assert.equal(result.filter(item => item.factType === "timeline").length, 2);
 });
