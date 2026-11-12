@@ -1,0 +1,45 @@
+name: Sarah clause-order experiment
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/clause-order-experiment.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  experiment:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Install Ollama
+        run: curl -fsSL https://ollama.com/install.sh | sh
+      - name: Start Qwen
+        shell: bash
+        run: |
+          ollama serve > "$RUNNER_TEMP/ollama-server.log" 2>&1 &
+          for attempt in {1..60}; do
+            if curl -fsS http://127.0.0.1:11434/api/tags > /dev/null; then break; fi
+            sleep 2
+          done
+          ollama pull qwen2.5:1.5b
+      - name: Run five rounds across six wordings
+        run: node --experimental-strip-types scripts/experiment-clause-order.mjs
+      - name: Upload raw experiment logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: clause-order-raw-${{ github.run_number }}
+          path: |
+            outputs/clause-order-experiment.json
+            ${{ runner.temp }}/ollama-server.log
+          retention-days: 14
