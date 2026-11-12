@@ -119,6 +119,16 @@ test("forbidden claims fail even if required memories are present", () => {
   assert.deepEqual(result.forbiddenMatches, ["Discarded New York destination"]);
 });
 
+test("an explicit correction may mention the discarded city as context", () => {
+  const fixture = EXTRACTION_FIXTURES.find(item => item.id === "self_correction");
+  const result = scoreExtraction(fixture, [
+    { name: "Michael", detail: "Moving to Boston instead of New York", factType: "timeline" },
+    { name: "Michael", detail: "His wife found a job in Boston", factType: "timeline" },
+  ]);
+  assert.deepEqual(result.forbiddenMatches, []);
+  assert.equal(result.covered, 2);
+});
+
 test("a correctly directed kinship description is not mistaken for a reversed relationship", () => {
   const fixture = EXTRACTION_FIXTURES.find(item => item.id === "named_relatives");
   const correct = scoreExtraction(fixture, [

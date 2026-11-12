@@ -80,7 +80,7 @@ export const EXTRACTION_FIXTURES: ExtractionFixture[] = [
       { label: "Michael's wife found a job in Boston", person: "Michael", signals: ["wife", "job", "Boston"], factType: "timeline" },
     ],
     forbidden: [
-      { label: "Discarded New York destination", signals: ["mov", "New York"] },
+      { label: "Discarded New York destination", signals: ["(?:mov(?:ing|es|e)\\s+to\\s+New York|New York\\s+instead)"] },
       { label: "Fabricated unnamed wife contact", person: "Michael's wife", signals: ["job"] },
     ],
   },
