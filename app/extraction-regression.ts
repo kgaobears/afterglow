@@ -32,14 +32,12 @@ export const EXTRACTION_FIXTURES: ExtractionFixture[] = [
   },
   {
     id: "named_relatives",
-    title: "Multiple named relatives and a visit",
+    title: "Three meaningful Kyle updates about relatives and a visit",
     note: "Kyle has an older brother named Francis who lives in San Francisco. His younger sister Emily just moved to Seattle. Kyle visited Francis last weekend.",
     date: "2026-11-08",
     expected: [
-      { label: "Francis is Kyle's older brother", person: "Kyle", signals: ["Francis", "brother", "older"], factType: "profile" },
-      { label: "Emily is Kyle's younger sister", person: "Kyle", signals: ["Emily", "sister", "younger"], factType: "profile" },
-      { label: "Francis lives in San Francisco", person: "Francis", signals: ["liv(?:es|ing)", "(?:San Francisco|\\bSF\\b)"], factType: "profile" },
-      { label: "Emily moved to Seattle", person: "Emily", signals: ["mov", "Seattle"], factType: "timeline" },
+      { label: "Kyle's older brother Francis lives in SF", person: "Kyle", signals: ["Francis", "brother", "older", "(?:San Francisco|\\bSF\\b)"], factType: "profile" },
+      { label: "Kyle's younger sister Emily moved to Seattle", person: "Kyle", signals: ["Emily", "sister", "younger", "mov", "Seattle"], factType: "timeline" },
       { label: "Kyle visited Francis", person: "Kyle", signals: ["visit", "Francis", "weekend"], factType: "timeline" },
     ],
     forbidden: [

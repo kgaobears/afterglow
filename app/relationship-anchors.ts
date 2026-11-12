@@ -44,3 +44,23 @@ export function preserveRelationshipDirections(memories: SourceMemory[], source:
   const anchors = explicitRelationshipAnchors(source);
   return anchors.length ? memories.filter(memory => !contradictsRelationshipDirection(memory, anchors)) : memories;
 }
+
+// Afterglow is a memory about people the user knows, not a directory of every
+// named relative. An update about a relative may live under the contact whose
+// relationship introduced them. Retain the relative's identity in the detail.
+export function attachNamedRelativeUpdates(memories: SourceMemory[], source: string): SourceMemory[] {
+  const anchors = explicitRelationshipAnchors(source);
+  return memories.map(memory => {
+    const anchor = anchors.find(a => a.relative.toLowerCase() === memory.name.toLowerCase());
+    if (!anchor) return memory;
+    const prefix = `Their ${anchor.relation} ${anchor.relative}`;
+    let detail = memory.detail.trim();
+    const alreadyQualified = new RegExp(`^${escapeRegExp(anchor.owner)}[’']s\\s+${escapeRegExp(anchor.relation)}\\b`, "i");
+    if (alreadyQualified.test(detail)) {
+      detail = detail.replace(alreadyQualified, prefix).replace(/\bwho\s+(?=\w)/i, "");
+    } else {
+      detail = `${prefix} ${detail.replace(new RegExp(`^${escapeRegExp(anchor.relative)}\\s+`, "i"), "").replace(/^([A-Z])/, letter => letter.toLowerCase())}`;
+    }
+    return { ...memory, name: anchor.owner, detail: detail.replace(/\s+/g, " ").trim() };
+  });
+}

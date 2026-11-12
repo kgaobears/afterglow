@@ -147,6 +147,6 @@ test("directional relationship anchors survive model passes and remove invented 
   const result = await runCase(named, model);
   assert.equal(result.memories.length, 2);
   assert.ok(result.memories.some(item => item.name === "Kyle" && /Francis/.test(item.detail)));
-  assert.ok(result.memories.some(item => item.name === "Emily" && /Seattle/.test(item.detail)));
+  assert.ok(result.memories.some(item => item.name === "Kyle" && /Emily.*Seattle/.test(item.detail)));
   assert.match(model.calls[1].messages[1].content, /direction is fixed/);
 });

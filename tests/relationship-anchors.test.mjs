@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { explicitRelationshipAnchors, preserveRelationshipDirections } from "../app/relationship-anchors.ts";
+import { attachNamedRelativeUpdates, explicitRelationshipAnchors, preserveRelationshipDirections } from "../app/relationship-anchors.ts";
 import { EXTRACTION_FIXTURES } from "../app/extraction-regression.ts";
 
 const note = EXTRACTION_FIXTURES.find(item => item.id === "named_relatives").note;
@@ -28,4 +28,14 @@ test("unknown or independently stated relationships are not guessed or erased", 
   assert.deepEqual(preserveRelationshipDirections([candidate], note), [candidate]);
   const reciprocal = "Kyle has an older brother named Francis. Francis has an older brother named Kyle.";
   assert.deepEqual(preserveRelationshipDirections([memory("Francis", "Has an older brother named Kyle")], reciprocal).length, 1);
+});
+
+test("named relatives' profile and timeline updates can be stored under Kyle", () => {
+  const updates = attachNamedRelativeUpdates([
+    memory("Francis", "Kyle's older brother who lives in San Francisco"),
+    { ...memory("Emily", "Moved to Seattle"), factType: "timeline" },
+  ], note);
+  assert.deepEqual(updates.map(item => item.name), ["Kyle", "Kyle"]);
+  assert.match(updates[0].detail, /older brother Francis lives in San Francisco/);
+  assert.match(updates[1].detail, /younger sister Emily moved to Seattle/);
 });

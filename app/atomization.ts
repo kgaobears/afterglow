@@ -1,6 +1,6 @@
 import type { SourceMemory } from "./source-verification";
 import { inferFactType } from "./fact-type";
-import { preserveRelationshipDirections } from "./relationship-anchors";
+import { attachNamedRelativeUpdates, preserveRelationshipDirections } from "./relationship-anchors";
 
 // If a small on-device model cannot complete the atomization pass, preserve
 // concise candidates from its first response. The short `quote` field from
@@ -99,7 +99,8 @@ export function consolidateAtomicMemories(candidates: SourceMemory[], source: st
     if (!reversed.test(item.detail)) return true;
     return !new RegExp(`\\b${owner.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} visited (?:his|her|their) ${relative}\\b`, "i").test(sourceText);
   });
-  const unique = mergeCoverageCandidates([], supported.map(item => ({ ...item, factType: inferFactType(item.detail, item.factType) })));
+  const attached = attachNamedRelativeUpdates(supported, source);
+  const unique = mergeCoverageCandidates([], attached.filter(item => !/^(?:has|have|is|was|were|their|his|her|visited|moved|started)\s+.{8,}/i.test(item.name)).map(item => ({ ...item, factType: inferFactType(item.detail, item.factType) })));
   const stopwords = new Set(["a", "an", "the", "has", "have", "is", "are", "was", "were", "who", "that", "and", "his", "her", "their", "him", "them", "than", "in", "at", "to", "of"]);
   const terms = (value: string) => new Set(normalizedText(value).split(" ").filter(token => token && !stopwords.has(token)));
   return unique.filter((item, index) => {
