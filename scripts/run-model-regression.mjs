@@ -7,7 +7,8 @@
 import { writeFile } from "node:fs/promises";
 import process from "node:process";
 import { extractLocally } from "../app/local-inference.ts";
-import { EXTRACTION_FIXTURES, scoreExtraction } from "../app/extraction-regression.ts";
+import { EXTRACTION_FIXTURES, scoreExtraction, scoreExtractionWeighted } from "../app/extraction-regression.ts";
+import { COMPLEX_EXTRACTION_FIXTURES } from "../app/complex-extraction-fixtures.ts";
 
 const usage = `Afterglow real-model regression suite
 
@@ -22,6 +23,7 @@ Options:
   --endpoint URL         OpenAI-compatible /v1 base URL (default http://127.0.0.1:11434/v1)
   --model NAME           Model identifier (default qwen2.5:1.5b)
   --fixture ID           Run one fixture instead of the full suite
+  --complex              Run the separate complex suite (weighted scoring)
   --coverage             Enable the optional information-coverage pass
   --temporal             Enable the optional date-classification pass
   --output PATH          Save full per-pass prompts, responses and scores as JSON
@@ -39,13 +41,14 @@ function parseArgs(args) {
   const result = {
     endpoint: process.env.AFTERGLOW_LLM_ENDPOINT || "http://127.0.0.1:11434/v1",
     model: process.env.AFTERGLOW_LLM_MODEL || "qwen2.5:1.5b",
-    fixture: null, coverage: false, temporal: false, output: null, json: false, help: false,
+    fixture: null, complex: false, coverage: false, temporal: false, output: null, json: false, help: false,
   };
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     if (arg === "--help") result.help = true;
     else if (arg === "--coverage") result.coverage = true;
     else if (arg === "--temporal") result.temporal = true;
+    else if (arg === "--complex") result.complex = true;
     else if (arg === "--json") result.json = true;
     else if (["--endpoint", "--model", "--fixture", "--output"].includes(arg)) {
       if (!args[i + 1] || args[i + 1].startsWith("--")) throw new Error(`Missing value for ${arg}`);
@@ -95,10 +98,9 @@ function isBackendFailure(message) {
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   if (options.help) { process.stdout.write(usage); return; }
-  const fixtures = options.fixture
-    ? EXTRACTION_FIXTURES.filter(item => item.id === options.fixture)
-    : EXTRACTION_FIXTURES;
-  if (!fixtures.length) throw new Error(`Unknown fixture '${options.fixture}'. Available: ${EXTRACTION_FIXTURES.map(item => item.id).join(", ")}`);
+  const suite = options.complex ? COMPLEX_EXTRACTION_FIXTURES : EXTRACTION_FIXTURES;
+  const fixtures = options.fixture ? suite.filter(item => item.id === options.fixture) : suite;
+  if (!fixtures.length) throw new Error(`Unknown fixture '${options.fixture}'. Available: ${suite.map(item => item.id).join(", ")}`);
   const complete = createCompletion(options);
   const results = [];
   for (const fixture of fixtures) {
@@ -108,11 +110,17 @@ async function main() {
     let memories = [];
     let error;
     try {
-      memories = await extractLocally(fixture.note, [], "quality",
-        entry => progress.push({ elapsedMs: Date.now() - started, ...entry }),
-        update => Object.assign(diagnostics, update),
-        { complete, gatheringDate: fixture.date, enableCoveragePass: options.coverage,
-          enableTemporalPass: options.temporal, captureRequests: true });
+      for (const [gatheringIndex, gathering] of (fixture.notes || [{ note: fixture.note, date: fixture.date }]).entries()) {
+        const gatheringDiagnostics = {};
+        const extracted = await extractLocally(gathering.note, [], "quality",
+          entry => progress.push({ gatheringIndex, elapsedMs: Date.now() - started, ...entry }),
+          update => Object.assign(gatheringDiagnostics, update),
+          { complete, gatheringDate: gathering.date, enableCoveragePass: options.coverage,
+            enableTemporalPass: options.temporal, captureRequests: true });
+        memories.push(...extracted);
+        if (fixture.notes) diagnostics[`gathering${gatheringIndex + 1}`] = gatheringDiagnostics;
+        else Object.assign(diagnostics, gatheringDiagnostics);
+      }
     } catch (reason) {
       error = reason instanceof Error ? reason.message : String(reason);
     }
@@ -120,11 +128,11 @@ async function main() {
       gatheringDate: fixture.date, model: options.model, backend: options.endpoint,
       coverageEnabled: options.coverage, temporalEnabled: options.temporal,
       durationMs: Date.now() - started, progress, diagnostics,
-      memories, score: scoreExtraction(fixture, memories), ...(error ? { error } : {}) });
+      memories, score: scoreExtraction(fixture, memories), weightedScore: scoreExtractionWeighted(fixture, memories), ...(error ? { error } : {}) });
     if (!options.json) {
       const last = results.at(-1);
       const passed = !last.error && last.score.covered === last.score.total && last.score.correctlyTyped === last.score.total && last.score.redundantCount === 0 && last.score.forbiddenMatches.length === 0 && last.score.wrongReview.length === 0;
-      process.stdout.write(`${passed ? "PASS" : "FAIL"} ${fixture.id}: ${last.score.covered}/${last.score.total} facts, ${last.score.correctlyTyped}/${last.score.total} types (${last.durationMs} ms)\n`);
+      process.stdout.write(`${passed ? "PASS" : "FAIL"} ${fixture.id}: ${last.score.covered}/${last.score.total} facts, ${last.score.correctlyTyped}/${last.score.total} types, weighted ${last.weightedScore.total}/100 (${last.durationMs} ms)\n`);
       if (last.score.missing.length) process.stdout.write(`  Missing: ${last.score.missing.join(", ")}\n`);
       if (last.score.wrongType.length) process.stdout.write(`  Wrong type: ${last.score.wrongType.join(", ")}\n`);
       if (last.score.redundantCount) process.stdout.write(`  Redundant notes: ${last.score.redundantCount}\n`);
@@ -139,7 +147,7 @@ async function main() {
   const passed = results.length === fixtures.length && results.every(item =>
     !item.error && item.score.covered === item.score.total && item.score.correctlyTyped === item.score.total && item.score.redundantCount === 0 && item.score.forbiddenMatches.length === 0 && item.score.wrongReview.length === 0);
   const report = { passed, generatedAt: new Date().toISOString(),
-    config: { endpoint: options.endpoint, model: options.model, coverage: options.coverage, temporal: options.temporal },
+    config: { endpoint: options.endpoint, model: options.model, coverage: options.coverage, temporal: options.temporal, complex: options.complex },
     results };
   if (options.output) {
     await writeFile(options.output, `${JSON.stringify(report, null, 2)}\n`, "utf8");
