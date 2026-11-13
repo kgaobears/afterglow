@@ -71,6 +71,7 @@ jobs:
           npm run test:model -- --coverage --temporal --output outputs/model-regression.json
 
       - name: Score complex Qwen scenarios (diagnostic, non-blocking)
+        if: ${{ !cancelled() }}
         continue-on-error: true
         shell: bash
         run: |
