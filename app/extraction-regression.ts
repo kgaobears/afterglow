@@ -4,7 +4,7 @@ import { consolidateAtomicMemories } from "./atomization";
 export type ExtractionMemory = { name: string; detail: string; factType?: FactType; verification?: string };
 export type ExpectedAtomicFact = { label: string; person: string; signals: string[]; factType: FactType; rejectSignals?: string[]; reviewRequired?: boolean; verifiedRequired?: boolean };
 export type ForbiddenFact = { label: string; person?: string; signals: string[] };
-export type ExtractionFixture = { id: string; title: string; note: string; date: string; expected: ExpectedAtomicFact[]; optional?: ExpectedAtomicFact[]; forbidden?: ForbiddenFact[] };
+export type ExtractionFixture = { id: string; title: string; note: string; date: string; notes?: { date: string; note: string }[]; expected: ExpectedAtomicFact[]; optional?: ExpectedAtomicFact[]; forbidden?: ForbiddenFact[] };
 
 // Deliberately small, realistic examples. Extend this list when a real note
 // reveals a new failure mode. Only fictional examples belong in source code.
@@ -200,4 +200,53 @@ export function scoreExtraction(fixture: ExtractionFixture, memories: Extraction
     forbiddenMatches,
     wrongReview,
   };
+}
+
+export type WeightedExtractionScore = {
+  total: number;
+  components: { recall: number; attribution: number; temporal: number; verification: number; consolidation: number };
+  deductions: { unsupportedReview: number; unsupportedVerified: number };
+  matchedFacts: number;
+  expectedFacts: number;
+};
+
+/**
+ * A diagnostic, 100-point quality metric; never substitutes for the strict
+ * regression gate. Expected facts are matched independently by content here,
+ * so the scorer can distinguish missing content from mistaken attribution.
+ * Unlike the strict gate, one bundled note may provide multiple related facts.
+ */
+export function scoreExtractionWeighted(fixture: ExtractionFixture, memories: ExtractionMemory[]): WeightedExtractionScore {
+  const contentMatches = fixture.expected.map(expected => memories
+    .map((memory, index) => ({ memory, index }))
+    .filter(({ memory }) => expected.signals.every(signal => new RegExp(signal, "i").test(memory.detail))
+      && !(expected.rejectSignals || []).some(signal => new RegExp(signal, "i").test(memory.detail))));
+  const matched = contentMatches.filter(items => items.length > 0).length;
+  const attributed = contentMatches.filter((items, index) => items.some(({ memory }) =>
+    memory.name.trim().toLowerCase() === fixture.expected[index].person.toLowerCase())).length;
+  const typed = contentMatches.filter((items, index) => items.some(({ memory }) =>
+    memory.name.trim().toLowerCase() === fixture.expected[index].person.toLowerCase()
+    && memory.factType === fixture.expected[index].factType)).length;
+  const verified = contentMatches.filter((items, index) => items.some(({ memory }) => {
+    const expectation = fixture.expected[index];
+    if (memory.name.trim().toLowerCase() !== expectation.person.toLowerCase()) return false;
+    return expectation.verifiedRequired ? memory.verification === "verified"
+      : expectation.reviewRequired ? memory.verification === "review" : true;
+  })).length;
+  const n = fixture.expected.length || 1;
+  const strict = scoreExtraction(fixture, memories);
+  const unsupported = memories.filter(memory => (fixture.forbidden || []).some(item =>
+    (!item.person || memory.name.trim().toLowerCase() === item.person.toLowerCase())
+    && item.signals.every(signal => new RegExp(signal, "i").test(memory.detail))));
+  const unsupportedReview = unsupported.filter(memory => memory.verification !== "verified").length * 5;
+  const unsupportedVerified = unsupported.filter(memory => memory.verification === "verified").length * 15;
+  const components = {
+    recall: 40 * matched / n,
+    attribution: 20 * attributed / n,
+    temporal: 15 * typed / n,
+    verification: 15 * verified / n,
+    consolidation: 10 * Math.max(0, 1 - strict.redundantCount / Math.max(1, memories.length)),
+  };
+  const total = Math.max(0, Math.round((Object.values(components).reduce((a, b) => a + b, 0) - unsupportedReview - unsupportedVerified) * 10) / 10);
+  return { total, components, deductions: { unsupportedReview, unsupportedVerified }, matchedFacts: matched, expectedFacts: fixture.expected.length };
 }
