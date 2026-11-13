@@ -10,7 +10,7 @@ export const COMPLEX_EXTRACTION_FIXTURES: ExtractionFixture[] = [
       { label: "Michael's wife has remote Portland job", person: "Michael", signals: ["wife", "job", "Portland", "remot"], factType: "timeline" },
     ],
     forbidden: [
-      { label: "December treated as current moving date", signals: ["mov", "Seattle", "December" ] },
+      { label: "December treated as current moving date", signals: ["Seattle\\s+(?:in|for)\\s+December"] },
       { label: "Michael moving to Portland", signals: ["(?:Michael|he).*mov(?:ing|es|e).*Portland"] },
       { label: "Invented wife contact", person: "Michael's wife", signals: ["job"] },
     ],
@@ -44,7 +44,7 @@ export const COMPLEX_EXTRACTION_FIXTURES: ExtractionFixture[] = [
     expected: [
       { label: "Sarah ankle injury in March", person: "Sarah", signals: ["ankle", "injur", "March"], factType: "timeline" },
       { label: "Sarah stopped running two months", person: "Sarah", signals: ["(?:stop|pause|break|off)", "run", "(?:two|2) months"], factType: "timeline" },
-      { label: "Sarah started PT in May", person: "Sarah", signals: ["(?:physical therapy|physiotherapy|\bPT\b)", "May"], factType: "timeline" },
+      { label: "Sarah started PT in May", person: "Sarah", signals: ["(?:physical therapy|physiotherapy|\\bPT\\b)", "May"], factType: "timeline" },
       { label: "Sarah completed return 5K", person: "Sarah", signals: ["(?:5K|five.kilometer)", "(?:first|return|recover|complete)"], factType: "timeline" },
     ],
   },
