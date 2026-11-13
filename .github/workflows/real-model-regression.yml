@@ -11,6 +11,7 @@ on:
       - 'app/memory-parser.ts'
       - 'app/source-verification.ts'
       - 'app/extraction-regression.ts'
+      - 'app/complex-extraction-fixtures.ts'
       - 'app/fact-type.ts'
       - 'app/temporal-facts.ts'
       - 'scripts/run-model-regression.mjs'
@@ -69,6 +70,12 @@ jobs:
           mkdir -p outputs
           npm run test:model -- --coverage --temporal --output outputs/model-regression.json
 
+      - name: Score complex Qwen scenarios (diagnostic, non-blocking)
+        continue-on-error: true
+        shell: bash
+        run: |
+          npm run test:model -- --complex --coverage --temporal --output outputs/complex-model-regression.json
+
       - name: Upload pass-by-pass model logs
         if: always()
         uses: actions/upload-artifact@v4
@@ -76,6 +83,7 @@ jobs:
           name: qwen-regression-logs-${{ github.run_number }}
           path: |
             outputs/model-regression.json
+            outputs/complex-model-regression.json
             ${{ runner.temp }}/ollama-server.log
           if-no-files-found: warn
           retention-days: 14
