@@ -1,0 +1,106 @@
+[
+  {
+    "id": "manager-offers-promotion",
+    "category": "manager",
+    "note": "Andrew spoke with his manager, Rebecca. He offered him a promotion.",
+    "sentence": "He offered him a promotion.",
+    "pronoun": "He",
+    "occurrence": 0,
+    "expected": "Rebecca",
+    "aliases": ["Andrew's manager", "manager"]
+  },
+  {
+    "id": "manager-receives-promotion",
+    "category": "manager",
+    "note": "Andrew spoke with his manager, Rebecca. He offered him a promotion.",
+    "sentence": "He offered him a promotion.",
+    "pronoun": "him",
+    "occurrence": 0,
+    "expected": "Andrew"
+  },
+  {
+    "id": "doctor-prescribes-medicine",
+    "category": "doctor",
+    "note": "Maya met her doctor, Dr. Chen. She prescribed her medication.",
+    "sentence": "She prescribed her medication.",
+    "pronoun": "She",
+    "occurrence": 0,
+    "expected": "Dr. Chen",
+    "aliases": ["Maya's doctor", "doctor", "Chen"]
+  },
+  {
+    "id": "doctor-receives-medicine",
+    "category": "doctor",
+    "note": "Maya met her doctor, Dr. Chen. She prescribed her medication.",
+    "sentence": "She prescribed her medication.",
+    "pronoun": "her",
+    "occurrence": 0,
+    "expected": "Maya"
+  },
+  {
+    "id": "teacher-gives-assignment",
+    "category": "teacher",
+    "note": "Liam spoke with his teacher, Mrs. Patel. She gave him homework.",
+    "sentence": "She gave him homework.",
+    "pronoun": "She",
+    "occurrence": 0,
+    "expected": "Mrs. Patel",
+    "aliases": ["Liam's teacher", "teacher", "Patel"]
+  },
+  {
+    "id": "teacher-homework-recipient",
+    "category": "teacher",
+    "note": "Liam spoke with his teacher, Mrs. Patel. She gave him homework.",
+    "sentence": "She gave him homework.",
+    "pronoun": "him",
+    "occurrence": 0,
+    "expected": "Liam"
+  },
+  {
+    "id": "passive-visited-agent",
+    "category": "passive",
+    "note": "Kyle waited at home for his brother Mark. Kyle was visited by him.",
+    "sentence": "Kyle was visited by him.",
+    "pronoun": "him",
+    "occurrence": 0,
+    "expected": "Mark",
+    "aliases": ["Kyle's brother", "brother"]
+  },
+  {
+    "id": "passive-visited-patient",
+    "category": "passive",
+    "note": "Kyle was recovering at home. His brother Mark came by. He was visited by Mark.",
+    "sentence": "He was visited by Mark.",
+    "pronoun": "He",
+    "occurrence": 0,
+    "expected": "Kyle"
+  },
+  {
+    "id": "passive-promotion-agent",
+    "category": "passive",
+    "note": "Andrew works for manager Rebecca. Andrew was promoted by her.",
+    "sentence": "Andrew was promoted by her.",
+    "pronoun": "her",
+    "occurrence": 0,
+    "expected": "Rebecca",
+    "aliases": ["manager", "Andrew's manager"]
+  },
+  {
+    "id": "active-employee-thanks-manager",
+    "category": "role-reversal",
+    "note": "Andrew received a promotion from manager Rebecca. He thanked her afterward.",
+    "sentence": "He thanked her afterward.",
+    "pronoun": "He",
+    "occurrence": 0,
+    "expected": "Andrew"
+  },
+  {
+    "id": "ambiguous-two-women",
+    "category": "ambiguity",
+    "note": "Nina met Mara at the park. She smiled.",
+    "sentence": "She smiled.",
+    "pronoun": "She",
+    "occurrence": 0,
+    "expected": "ambiguous"
+  }
+]
