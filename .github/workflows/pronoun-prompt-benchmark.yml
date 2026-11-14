@@ -1,0 +1,79 @@
+name: Pronoun resolution prompt benchmark (manual)
+
+# Intentionally no push, pull_request, or schedule trigger.
+on:
+  workflow_dispatch:
+    inputs:
+      fixture:
+        description: 'Optional fixture ID (leave blank for all)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: afterglow-pronoun-prompt-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  pronoun-prompt:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Check out Afterglow
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validate benchmark runner
+        run: |
+          node --check scripts/run-pronoun-prompt-benchmark.mjs
+          node -e 'const data=require("./tests/fixtures/pronoun-prompt-cases.json"); if(!Array.isArray(data)||!data.length) process.exit(1)'
+
+      - name: Install Ollama
+        run: curl -fsSL https://ollama.com/install.sh | sh
+
+      - name: Start Ollama and download Qwen 2.5 1.5B
+        shell: bash
+        run: |
+          ollama serve > "$RUNNER_TEMP/ollama-pronoun.log" 2>&1 &
+          ready=0
+          for attempt in {1..60}; do
+            if curl -fsS http://127.0.0.1:11434/api/tags > /dev/null; then
+              ready=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$ready" != 1 ]; then
+            echo 'Ollama did not become ready' >&2
+            exit 1
+          fi
+          ollama pull qwen2.5:1.5b
+
+      - name: Test pronoun-resolution prompt only
+        shell: bash
+        env:
+          FIXTURE_ID: ${{ inputs.fixture }}
+        run: |
+          mkdir -p outputs
+          args=(--output outputs/pronoun-prompt-results.json)
+          if [ -n "$FIXTURE_ID" ]; then
+            args+=(--fixture "$FIXTURE_ID")
+          fi
+          node scripts/run-pronoun-prompt-benchmark.mjs "${args[@]}"
+
+      - name: Upload prompts, answers, and scores
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pronoun-prompt-results-${{ github.run_number }}
+          path: |
+            outputs/pronoun-prompt-results.json
+            ${{ runner.temp }}/ollama-pronoun.log
+          if-no-files-found: warn
+          retention-days: 30
